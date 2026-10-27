@@ -347,12 +347,12 @@ export default {
       if (url.pathname === "/api/exams" && request.method === "POST") {
         const b = await bodyJson(request), name = typeof b?.name === "string" ? b.name.trim() : "", date = typeof b?.exam_date === "string" ? b.exam_date : "";
         if (!name || name.length > 100) return json({ error: "Exam name must be 1–100 characters." }, 400);
-        if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(date) || Number.isNaN(Date.parse(date + "T00:00:00Z"))) return json({ error: "Choose a valid exam date." }, 400);
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(Date.parse(date + "T00:00:00Z"))) return json({ error: "Choose a valid exam date." }, 400);
         const id = crypto.randomUUID();
         try { await env.DB.prepare("INSERT INTO exams(id,user_id,name,exam_date) VALUES(?,?,?,?)").bind(id,session.sub,name,date).run(); return json({ exam: { id,name,exam_date:date } },201); }
         catch { return json({ error: "Could not save exam. Check the database migration." },500); }
       }
-      const em = url.pathname.match(/^\\/api\\/exams\\/([0-9a-f-]{36})$/i);
+      const em = url.pathname.match(/^\/api\/exams\/([0-9a-f-]{36})$/i);
       if (em && request.method === "DELETE") {
         try { const r=await env.DB.prepare("DELETE FROM exams WHERE id=? AND user_id=?").bind(em[1],session.sub).run(); if(!r.meta?.changes)return json({error:"Exam not found."},404); await env.DB.prepare("DELETE FROM chapters WHERE exam_id=? AND user_id=?").bind(em[1],session.sub).run(); return json({ok:true}); }
         catch { return json({error:"Could not delete exam."},500); }
@@ -368,7 +368,7 @@ export default {
         try { await env.DB.prepare("INSERT INTO chapters(id,user_id,exam_id,subject,title) VALUES(?,?,?,?,?)").bind(id,session.sub,examId,subject,title).run(); return json({chapter:{id,exam_id:examId,subject,title,status:"not_started"}},201); }
         catch { return json({error:"Could not save chapter."},500); }
       }
-      const cm=url.pathname.match(/^\\/api\\/chapters\\/([0-9a-f-]{36})$/i);
+      const cm=url.pathname.match(/^\/api\/chapters\/([0-9a-f-]{36})$/i);
       if(cm&&request.method==="PATCH"){
         const b=await bodyJson(request), allowed=["not_started","learning","revising","mastered"];
         if(!allowed.includes(b?.status))return json({error:"Choose a valid status."},400);
