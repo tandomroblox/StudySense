@@ -17,6 +17,9 @@ const taskInput = document.querySelector("#taskInput");
 const subjectInput = document.querySelector("#subjectInput");
 const taskList = document.querySelector("#taskList");
 const taskMessage = document.querySelector("#taskMessage");
+const taskFilter = document.querySelector("#taskFilter");
+const visibleTaskCount = document.querySelector("#visibleTaskCount");
+let taskFilterMode = "all";
 
 const subjectExamples = {
   "Mathematics": "e.g. Complete exercise 4.2",
@@ -130,6 +133,8 @@ logoutButton.addEventListener("click", async () => {
   }
 });
 
+taskFilter.addEventListener("change", () => { taskFilterMode = taskFilter.value; renderTasks(); });
+
 function updateTaskPlaceholder() {
   taskInput.placeholder = subjectExamples[subjectInput.value] || "Enter a study task";
 }
@@ -149,6 +154,8 @@ function updateStats() {
 
 function renderTasks() {
   taskList.replaceChildren();
+  const visibleTasks = tasks.filter(task => taskFilterMode === "all" || (taskFilterMode === "active" && !task.done) || (taskFilterMode === "completed" && task.done));
+  visibleTaskCount.textContent = `${visibleTasks.length} shown`;
   if (tasks.length === 0) {
     const empty = document.createElement("p");
     empty.className = "empty";
@@ -156,7 +163,14 @@ function renderTasks() {
     taskList.append(empty);
   }
 
-  for (const task of tasks) {
+  if (tasks.length > 0 && visibleTasks.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "empty";
+    empty.textContent = taskFilterMode === "completed" ? "No completed tasks yet." : "Everything is complete. Nice work!";
+    taskList.append(empty);
+  }
+
+  for (const task of visibleTasks) {
     const row = document.createElement("div");
     row.className = `task${task.done ? " done" : ""}`;
 
@@ -328,3 +342,32 @@ function renderPractice(items){practiceList.replaceChildren();const total=items.
 async function loadLearningTools(){try{const [f,p]=await Promise.all([api("/api/flashcards"),api("/api/practice")]);renderFlashcards(f.flashcards);renderPractice(p.practice)}catch(e){flashMessage.textContent=e.message;practiceMessage.textContent=e.message;}}
 flashcardForm.addEventListener("submit",async ev=>{ev.preventDefault();const b=flashcardForm.querySelector('button[type="submit"]');b.disabled=true;try{await api("/api/flashcards",{method:"POST",body:JSON.stringify({subject:flashSubject.value.trim(),prompt:flashPrompt.value.trim(),answer:flashAnswer.value.trim()})});flashPrompt.value="";flashAnswer.value="";await loadLearningTools()}catch(e){flashMessage.textContent=e.message}finally{b.disabled=false}});
 practiceForm.addEventListener("submit",async ev=>{ev.preventDefault();const q=Number(practiceQuestions.value),c=Number(practiceCorrect.value);if(c>q){practiceMessage.textContent="Correct answers cannot exceed questions attempted.";return;}const b=practiceForm.querySelector('button[type="submit"]');b.disabled=true;try{await api("/api/practice",{method:"POST",body:JSON.stringify({subject:practiceSubject.value.trim(),topic:practiceTopic.value.trim(),questions:q,correct:c,notes:practiceNotes.value.trim()})});practiceTopic.value="";practiceQuestions.value="";practiceCorrect.value="";practiceNotes.value="";practiceMessage.textContent="Practice saved.";await loadLearningTools()}catch(e){practiceMessage.textContent=e.message}finally{b.disabled=false}});
+
+
+// Progressive Web App installation: browsers that support the install prompt get a button.
+// Browsers without that API simply keep the normal website experience.
+const installAppButton = document.querySelector("#installAppButton");
+let pendingInstallPrompt = null;
+window.addEventListener("beforeinstallprompt", event => {
+  event.preventDefault();
+  pendingInstallPrompt = event;
+  installAppButton.hidden = false;
+});
+installAppButton.addEventListener("click", async () => {
+  if (!pendingInstallPrompt) return;
+  installAppButton.disabled = true;
+  try {
+    await pendingInstallPrompt.prompt();
+    await pendingInstallPrompt.userChoice;
+    pendingInstallPrompt = null;
+    installAppButton.hidden = true;
+  } catch (error) {
+    console.warn("StudySense installation prompt was unavailable:", error);
+  } finally {
+    installAppButton.disabled = false;
+  }
+});
+window.addEventListener("appinstalled", () => {
+  pendingInstallPrompt = null;
+  installAppButton.hidden = true;
+});
