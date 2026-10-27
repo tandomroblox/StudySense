@@ -267,3 +267,13 @@ async function start() {
   }
 }
 start();
+
+
+// Register the offline app shell. API responses and account data are never cached.
+if ("serviceWorker" in navigator && window.isSecureContext) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch(error => {
+      console.warn("StudySense offline support could not be enabled:", error);
+    });
+  });
+}
