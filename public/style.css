@@ -168,3 +168,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .task-toolbar select { width:auto; min-width:150px; padding:9px 12px; }
 .task-toolbar .muted { margin-left:auto; font-size:12px; }
 @media(max-width:560px){ .task-toolbar select { flex:1; } .task-toolbar .muted { margin-left:0; width:100%; } }
+
+
+.status { text-align:right; }
+.status.offline { color:#ffcf8a; letter-spacing:1px; }
+@media(max-width:560px) { .status { max-width:52%; line-height:1.5; } .status.offline { font-size:9px; } }

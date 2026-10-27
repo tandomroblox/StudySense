@@ -371,3 +371,19 @@ window.addEventListener("appinstalled", () => {
   pendingInstallPrompt = null;
   installAppButton.hidden = true;
 });
+
+
+// Make the offline limitation clear: the app shell may load offline, but account data
+// and changes still require a connection because private API responses are never cached.
+const connectionStatus = document.querySelector("#connectionStatus");
+function updateConnectionStatus() {
+  const online = navigator.onLine;
+  connectionStatus.textContent = online ? "YOUR STUDY SPACE" : "OFFLINE · RECONNECT TO SYNC";
+  connectionStatus.classList.toggle("offline", !online);
+  connectionStatus.title = online
+    ? "Connected. Your account data can sync."
+    : "The app shell may still open, but account data and saving changes need an internet connection.";
+}
+window.addEventListener("online", updateConnectionStatus);
+window.addEventListener("offline", updateConnectionStatus);
+updateConnectionStatus();
