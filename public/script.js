@@ -66,6 +66,7 @@ const googleMessages = {
   link_required: "That Google email already has a StudySense account. Sign in with email and password first, then choose Connect Google.",
   signin_required: "Sign in to your StudySense account before connecting Google.",
   already_linked: "That Google account is already connected to a different StudySense account.",
+  email_conflict: "That Google email belongs to a different StudySense account. Sign in to that account before connecting it.",
   invalid_state: "Google sign-in could not be verified. Please try again.",
   cancelled: "Google sign-in was cancelled.",
   not_configured: "Google sign-in is not configured yet. The app owner needs to finish the Google and Cloudflare setup.",
