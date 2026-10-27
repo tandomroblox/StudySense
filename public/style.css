@@ -118,3 +118,46 @@ footer { text-align: center; color: #707b98; font-size: 12px; padding: 32px 0; }
 @media(max-width:560px){ .exam-center form button { width: auto; align-self: flex-start; } .exam-stats .card { padding: 12px 9px; } }
 
 .learning-tools{margin-top:20px}.learning-list{display:grid;gap:10px;margin-top:16px}.learning-card{background:#10182b;border:1px solid #ffffff14;border-radius:12px;padding:14px;min-width:0}.learning-card details{margin-top:12px}.learning-card summary{color:#aab6ff;cursor:pointer;font-size:13px}.learning-card details p{white-space:pre-wrap;overflow-wrap:anywhere}.learning-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.learning-actions button{font-size:12px;padding:9px 11px}.learning-tools form textarea{width:100%;padding:13px;border:1px solid #303b59;border-radius:9px;background:#0e1528;color:white;font:inherit;resize:vertical}.learning-tools form button{margin-top:14px;align-self:flex-start}.learning-tools .form-row{align-items:end}@media(max-width:560px){.learning-actions button{flex:1}.learning-tools .form-row{flex-direction:column;align-items:stretch}}
+
+
+/* Consistent form alignment: labels and controls share one predictable column. */
+.exam-center form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+}
+.exam-center form label { margin: 8px 0 0; }
+.exam-center form input,
+.exam-center form select { width: 100%; min-width: 0; }
+.exam-center form button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: start;
+  align-self: start;
+  width: auto;
+  max-width: 100%;
+  margin-top: 8px;
+}
+.exam-center h2 { margin-top: 28px; }
+.exam-center .section-heading h2 { margin-top: 8px; }
+.exam-center .exam-stats h2 { margin-top: 10px; }
+.account-actions { align-items: center; flex-wrap: wrap; }
+.account-actions button { min-height: 42px; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible,
+.learning-card summary:focus-visible { outline: 2px solid #a3afff; outline-offset: 3px; }
+.task, .exam-card, .chapter-row, .plan-row, .learning-card { min-width: 0; }
+.task > input[type="checkbox"] { flex: 0 0 17px; }
+.task .delete-btn { flex: 0 0 auto; }
+@media (max-width: 560px) {
+  .exam-center { padding: 17px; }
+  .exam-center form button { justify-self: stretch; width: 100%; }
+  .section-heading { align-items: flex-start; }
+  .section-heading .pill { flex: 0 0 auto; margin-top: 4px; }
+  .account-bar { align-items: flex-start; flex-direction: column; }
+  .account-actions { width: 100%; justify-content: flex-start; }
+  .account-actions button { flex: 1 1 auto; }
+  .task { gap: 9px; }
+  .task .delete-btn { padding: 8px; }
+}
