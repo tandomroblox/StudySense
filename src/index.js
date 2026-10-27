@@ -1,6 +1,6 @@
 const COOKIE_NAME = "__Host-studysense_session";
 const SESSION_SECONDS = 60 * 60 * 24 * 7;
-const PASSWORD_ITERATIONS = 310000;
+const PASSWORD_ITERATIONS = 100000;
 
 function json(data, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(data), {
@@ -130,7 +130,8 @@ export default {
           name: error instanceof Error ? error.name : "UnknownError",
           message: error instanceof Error ? error.message : String(error)
         });
-        return json({ error: `Account creation failed while ${stage}. Please try again.` }, 500);
+        const detail = error instanceof Error && error.message.startsWith("Password hashing failed at ") ? error.message : `Account creation failed while ${stage}. Please try again.`;
+        return json({ error: detail }, 500);
       }
     }
 
