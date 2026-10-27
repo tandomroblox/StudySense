@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#101a42"/><stop offset="1" stop-color="#070d24"/></linearGradient>
+    <linearGradient id="cap" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff"/><stop offset=".6" stop-color="#dce8ff"/><stop offset="1" stop-color="#8bb7ff"/></linearGradient>
+    <linearGradient id="base" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#59baff"/><stop offset="1" stop-color="#3038ff"/></linearGradient>
+    <linearGradient id="orbit" x1="0" y1="1" x2="1" y2="0"><stop stop-color="#36baff"/><stop offset=".55" stop-color="#6657ff"/><stop offset="1" stop-color="#a9c9ff"/></linearGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="8"/></filter>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <rect x="4" y="4" width="504" height="504" rx="108" fill="none" stroke="#526dff" stroke-opacity=".55" stroke-width="3"/>
+  <ellipse cx="252" cy="270" rx="174" ry="118" fill="none" stroke="#455cff" stroke-width="22" opacity=".3" filter="url(#glow)" transform="rotate(-24 252 270)"/>
+  <path d="M84 337C45 273 128 193 230 164S394 163 420 208C454 267 404 341 350 365" fill="none" stroke="url(#orbit)" stroke-width="18" stroke-linecap="round"/>
+  <path d="M85 337C45 273 128 193 230 164S394 163 420 208C454 267 404 341 350 365" fill="none" stroke="#9edbff" stroke-opacity=".3" stroke-width="5" stroke-linecap="round"/>
+  <path d="M118 240L256 177 394 240 256 303Z" fill="#6989ff" opacity=".35" filter="url(#glow)"/>
+  <path d="M117 238L256 173 395 238 256 304Z" fill="url(#cap)"/>
+  <path d="M164 263V309C217 345 294 345 348 309V263L256 307Z" fill="url(#base)"/>
+  <path d="M164 263V309C217 345 294 345 348 309" fill="none" stroke="#d8e6ff" stroke-opacity=".8" stroke-width="4"/>
+  <path d="M395 238V302" stroke="#dce8ff" stroke-width="7" stroke-linecap="round"/>
+  <circle cx="395" cy="309" r="9" fill="#fff"/>
+  <path d="M395 316L382 345Q395 361 408 345Z" fill="#dce8ff"/>
+  <path d="M421 105L432 132 460 143 432 154 421 182 410 154 382 143 410 132Z" fill="#fff"/>
+  <path d="M421 105L432 132 460 143 432 154 421 182 410 154 382 143 410 132Z" fill="#91c8ff" opacity=".65" filter="url(#glow)"/>
+</svg>
