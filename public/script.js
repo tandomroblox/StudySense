@@ -259,7 +259,7 @@ async function start() {
       await loadTasks();
       if (googleStatus === "linked") taskMessage.textContent = googleMessages.linked;
     } else {
-      showSignedOut();
+      showSignedOut(googleStatus && googleMessages[googleStatus] ? googleMessages[googleStatus] : "");
     }
   } catch {
     showSignedOut("Could not connect to StudySense. Refresh the page and try again.");
