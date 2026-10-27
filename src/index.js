@@ -82,6 +82,80 @@ function validOrigin(request) {
 }
 function setCorsVary(headers) { headers.set("vary", "Origin"); return headers; }
 
+const GOOGLE_STATE_COOKIE = "__Host-studysense_oauth_state";
+const GOOGLE_STATE_SECONDS = 600;
+
+async function signState(payload, secret) {
+  const encoded = b64url(new TextEncoder().encode(JSON.stringify(payload)));
+  return encoded + "." + b64url(await hmac(secret, encoded));
+}
+async function verifyState(token, secret) {
+  if (!token || !secret) return null;
+  const parts = token.split(".");
+  if (parts.length !== 2) return null;
+  try {
+    const expected = await hmac(secret, parts[0]);
+    const supplied = fromB64url(parts[1]);
+    if (expected.length !== supplied.length || !expected.every((v, i) => v === supplied[i])) return null;
+    const payload = JSON.parse(new TextDecoder().decode(fromB64url(parts[0])));
+    if (!payload.exp || payload.exp < Date.now() / 1000 || !payload.nonce || !["login", "link"].includes(payload.mode)) return null;
+    return payload;
+  } catch { return null; }
+}
+function oauthStateCookie(value, maxAge = GOOGLE_STATE_SECONDS) {
+  return `${GOOGLE_STATE_COOKIE}=${value}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${maxAge}`;
+}
+function redirectWithGoogleStatus(request, status) {
+  const target = new URL("/", request.url);
+  target.searchParams.set("google", status);
+  return Response.redirect(target.toString(), 303);
+}
+async function googleIdentityFromCode(code, request, env, nonce) {
+  const redirectUri = new URL("/api/auth/google/callback", request.url).toString();
+  const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      code,
+      client_id: env.GOOGLE_CLIENT_ID,
+      client_secret: env.GOOGLE_CLIENT_SECRET,
+      redirect_uri: redirectUri,
+      grant_type: "authorization_code"
+    })
+  });
+  if (!tokenResponse.ok) throw new Error("Google token exchange failed");
+  const tokenData = await tokenResponse.json();
+  if (typeof tokenData.id_token !== "string") throw new Error("Google did not return an ID token");
+
+  const jwtParts = tokenData.id_token.split(".");
+  if (jwtParts.length !== 3) throw new Error("Invalid Google ID token");
+  const header = JSON.parse(new TextDecoder().decode(fromB64url(jwtParts[0])));
+  const claims = JSON.parse(new TextDecoder().decode(fromB64url(jwtParts[1])));
+  if (header.alg !== "RS256" || typeof header.kid !== "string") throw new Error("Unsupported Google ID token");
+  const keysResponse = await fetch("https://www.googleapis.com/oauth2/v3/certs");
+  if (!keysResponse.ok) throw new Error("Could not retrieve Google's signing keys");
+  const keySet = await keysResponse.json();
+  const jwk = keySet.keys?.find(key => key.kid === header.kid && key.use === "sig" && key.alg === "RS256");
+  if (!jwk) throw new Error("Google signing key not found");
+  const publicKey = await crypto.subtle.importKey(
+    "jwk", jwk, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["verify"]
+  );
+  const validSignature = await crypto.subtle.verify(
+    "RSASSA-PKCS1-v1_5", publicKey, fromB64url(jwtParts[2]),
+    new TextEncoder().encode(jwtParts[0] + "." + jwtParts[1])
+  );
+  if (!validSignature) throw new Error("Google ID token signature is invalid");
+  const now = Math.floor(Date.now() / 1000);
+  const audience = Array.isArray(claims.aud) ? claims.aud.includes(env.GOOGLE_CLIENT_ID) : claims.aud === env.GOOGLE_CLIENT_ID;
+  if (!["accounts.google.com", "https://accounts.google.com"].includes(claims.iss) ||
+      !audience || (claims.exp || 0) <= now || (claims.iat || 0) > now + 60 ||
+      claims.nonce !== nonce || claims.email_verified !== true ||
+      typeof claims.sub !== "string" || typeof claims.email !== "string") {
+    throw new Error("Google ID token claims are invalid");
+  }
+  return { sub: claims.sub, email: claims.email.trim().toLowerCase() };
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -104,6 +178,102 @@ export default {
 
     if (["POST", "PATCH", "DELETE"].includes(request.method) && !validOrigin(request)) {
       return json({ error: "Invalid request origin." }, 403);
+    }
+
+
+    if (url.pathname === "/api/auth/google/start" && request.method === "GET") {
+      if (!env.GOOGLE_CLIENT_ID) return json({ error: "Google sign-in is not configured yet. Add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET to the Worker." }, 503);
+      const mode = url.searchParams.get("mode") === "link" ? "link" : "login";
+      let currentSession = null;
+      if (mode === "link") {
+        currentSession = await readSession(request, env.SESSION_SECRET);
+        if (!currentSession) return redirectWithGoogleStatus(request, "signin_required");
+      }
+      const state = await signState({
+        mode,
+        userId: currentSession?.sub || null,
+        nonce: b64url(crypto.getRandomValues(new Uint8Array(24))),
+        exp: Math.floor(Date.now() / 1000) + GOOGLE_STATE_SECONDS
+      }, env.SESSION_SECRET);
+      const googleUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+      googleUrl.search = new URLSearchParams({
+        client_id: env.GOOGLE_CLIENT_ID,
+        redirect_uri: new URL("/api/auth/google/callback", request.url).toString(),
+        response_type: "code",
+        scope: "openid email profile",
+        state,
+        nonce: (await verifyState(state, env.SESSION_SECRET)).nonce,
+        prompt: "select_account"
+      }).toString();
+      return new Response(null, {
+        status: 302,
+        headers: {
+          "location": googleUrl.toString(),
+          "cache-control": "no-store",
+          "set-cookie": oauthStateCookie(state)
+        }
+      });
+    }
+
+    if (url.pathname === "/api/auth/google/callback" && request.method === "GET") {
+      const stateToken = url.searchParams.get("state");
+      const savedState = cookie(request, GOOGLE_STATE_COOKIE);
+      const state = await verifyState(stateToken, env.SESSION_SECRET);
+      const clearStateCookie = oauthStateCookie("", 0);
+      if (!state || !savedState || stateToken !== savedState) {
+        return new Response(null, { status: 303, headers: { "location": new URL("/?google=invalid_state", request.url).toString(), "set-cookie": clearStateCookie, "cache-control": "no-store" } });
+      }
+      if (url.searchParams.has("error") || !url.searchParams.get("code")) {
+        return new Response(null, { status: 303, headers: { "location": new URL("/?google=cancelled", request.url).toString(), "set-cookie": clearStateCookie, "cache-control": "no-store" } });
+      }
+      if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) {
+        return new Response(null, { status: 303, headers: { "location": new URL("/?google=not_configured", request.url).toString(), "set-cookie": clearStateCookie, "cache-control": "no-store" } });
+      }
+      try {
+        const identity = await googleIdentityFromCode(url.searchParams.get("code"), request, env, state.nonce);
+        let user;
+        if (state.mode === "link") {
+          const currentSession = await readSession(request, env.SESSION_SECRET);
+          if (!currentSession || currentSession.sub !== state.userId) {
+            return new Response(null, { status: 303, headers: { "location": new URL("/?google=signin_required", request.url).toString(), "set-cookie": clearStateCookie, "cache-control": "no-store" } });
+          }
+          const [existingGoogleUser, currentUser] = await Promise.all([
+            env.DB.prepare("SELECT id FROM users WHERE google_sub = ?").bind(identity.sub).first(),
+            env.DB.prepare("SELECT google_sub FROM users WHERE id = ?").bind(currentSession.sub).first()
+          ]);
+          if ((existingGoogleUser && existingGoogleUser.id !== currentSession.sub) ||
+              (currentUser?.google_sub && currentUser.google_sub !== identity.sub)) {
+            return new Response(null, { status: 303, headers: { "location": new URL("/?google=already_linked", request.url).toString(), "set-cookie": clearStateCookie, "cache-control": "no-store" } });
+          }
+          await env.DB.prepare("UPDATE users SET google_sub = ? WHERE id = ?").bind(identity.sub, currentSession.sub).run();
+          return new Response(null, { status: 303, headers: { "location": new URL("/?google=linked", request.url).toString(), "set-cookie": clearStateCookie, "cache-control": "no-store" } });
+        }
+
+        user = await env.DB.prepare("SELECT id, email FROM users WHERE google_sub = ?").bind(identity.sub).first();
+        if (!user) {
+          const emailUser = await env.DB.prepare("SELECT id, email, google_sub FROM users WHERE email = ?").bind(identity.email).first();
+          if (emailUser) {
+            return new Response(null, { status: 303, headers: { "location": new URL("/?google=link_required", request.url).toString(), "set-cookie": clearStateCookie, "cache-control": "no-store" } });
+          }
+          const id = crypto.randomUUID();
+          await env.DB.prepare("INSERT INTO users (id, email, password_hash, google_sub) VALUES (?, ?, NULL, ?)").bind(id, identity.email, identity.sub).run();
+          user = { id, email: identity.email };
+        }
+        const token = await makeSession(user, env.SESSION_SECRET);
+        const headers = new Headers({
+          "location": new URL("/", request.url).toString(),
+          "cache-control": "no-store"
+        });
+        headers.append("set-cookie", sessionCookie(token));
+        headers.append("set-cookie", clearStateCookie);
+        return new Response(null, { status: 303, headers });
+      } catch (error) {
+        console.error("StudySense Google OAuth failed", {
+          name: error instanceof Error ? error.name : "UnknownError",
+          message: error instanceof Error ? error.message : String(error)
+        });
+        return new Response(null, { status: 303, headers: { "location": new URL("/?google=failed", request.url).toString(), "set-cookie": clearStateCookie, "cache-control": "no-store" } });
+      }
     }
 
     if (url.pathname === "/api/auth/register" && request.method === "POST") {

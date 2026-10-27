@@ -29,6 +29,8 @@
         <button type="button" id="showLogin" class="tab active">Sign in</button>
         <button type="button" id="showRegister" class="tab">Create account</button>
       </div>
+      <button id="googleSignIn" class="google-button" type="button"><span aria-hidden="true">G</span> Continue with Google</button>
+      <div class="auth-divider"><span>or use email</span></div>
       <form id="authForm">
         <label for="emailInput">Email</label>
         <input id="emailInput" type="email" autocomplete="email" maxlength="254" required placeholder="you@example.com">
@@ -37,13 +39,13 @@
         <button id="authSubmit" class="primary-button" type="submit">Sign in</button>
       </form>
       <p id="authMessage" class="message" role="status" aria-live="polite"></p>
-      <p class="fine-print">Password sign-in is available now. Google sign-in will be added after OAuth is configured.</p>
+      <p class="fine-print">Your email and Google sign-in can use the same StudySense account. Existing accounts must be linked from inside your signed-in session.</p>
     </section>
 
     <section id="appPanel" hidden>
       <div class="account-bar">
         <span id="signedInAs" class="muted"></span>
-        <button id="logoutButton" class="secondary-button" type="button">Sign out</button>
+        <div class="account-actions"><button id="connectGoogleButton" class="secondary-button" type="button">Connect Google</button><button id="logoutButton" class="secondary-button" type="button">Sign out</button></div>
       </div>
       <section class="stats">
         <article class="card"><p class="muted">Total tasks</p><h2 id="totalTasks">0</h2></article>

@@ -8,6 +8,8 @@ const authSubmit = document.querySelector("#authSubmit");
 const authMessage = document.querySelector("#authMessage");
 const showLogin = document.querySelector("#showLogin");
 const showRegister = document.querySelector("#showRegister");
+const googleSignIn = document.querySelector("#googleSignIn");
+const connectGoogleButton = document.querySelector("#connectGoogleButton");
 const logoutButton = document.querySelector("#logoutButton");
 const signedInAs = document.querySelector("#signedInAs");
 const form = document.querySelector("#taskForm");
@@ -56,16 +58,42 @@ function setAuthMode(mode) {
 }
 showLogin.addEventListener("click", () => setAuthMode("login"));
 showRegister.addEventListener("click", () => setAuthMode("register"));
+googleSignIn.addEventListener("click", () => { window.location.assign("/api/auth/google/start"); });
+connectGoogleButton.addEventListener("click", () => { window.location.assign("/api/auth/google/start?mode=link"); });
+
+const googleMessages = {
+  linked: "Google is now connected to your StudySense account.",
+  link_required: "That Google email already has a StudySense account. Sign in with email and password first, then choose Connect Google.",
+  signin_required: "Sign in to your StudySense account before connecting Google.",
+  already_linked: "That Google account is already connected to a different StudySense account.",
+  invalid_state: "Google sign-in could not be verified. Please try again.",
+  cancelled: "Google sign-in was cancelled.",
+  not_configured: "Google sign-in is not configured yet. The app owner needs to finish the Google and Cloudflare setup.",
+  failed: "Google sign-in failed. Please try again."
+};
+const googleStatus = new URLSearchParams(window.location.search).get("google");
+if (googleStatus && googleMessages[googleStatus]) {
+  authMessage.textContent = googleMessages[googleStatus];
+  if (googleStatus === "linked") {
+    authMessage.textContent = "";
+  }
+  if (googleStatus === "linked") {
+    // The signed-in session remains valid after linking; start() will restore the account.
+  }
+  window.history.replaceState({}, "", window.location.pathname);
+}
 
 function showSignedOut(message = "") {
   authPanel.hidden = false;
   appPanel.hidden = true;
+  connectGoogleButton.hidden = true;
   authMessage.textContent = message;
   tasks = [];
 }
 function showSignedIn(user) {
   authPanel.hidden = true;
   appPanel.hidden = false;
+  connectGoogleButton.hidden = false;
   signedInAs.textContent = `Signed in as ${user.email}`;
 }
 
@@ -229,6 +257,7 @@ async function start() {
     if (data.user) {
       showSignedIn(data.user);
       await loadTasks();
+      if (googleStatus === "linked") taskMessage.textContent = googleMessages.linked;
     } else {
       showSignedOut();
     }
