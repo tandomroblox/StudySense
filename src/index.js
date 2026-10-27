@@ -333,6 +333,51 @@ export default {
       return session ? json({ user: { id: session.sub, email: session.email } }) : json({ user: null });
     }
 
+
+    if (url.pathname === "/api/exams" || url.pathname.startsWith("/api/exams/") || url.pathname === "/api/chapters" || url.pathname.startsWith("/api/chapters/")) {
+      const session = await readSession(request, env.SESSION_SECRET);
+      if (!session) return json({ error: "Please sign in to manage exams and syllabus." }, 401);
+      if (url.pathname === "/api/exams" && request.method === "GET") {
+        try {
+          const e = await env.DB.prepare("SELECT id,name,exam_date FROM exams WHERE user_id=? ORDER BY exam_date").bind(session.sub).all();
+          const c = await env.DB.prepare("SELECT id,exam_id,subject,title,status FROM chapters WHERE user_id=? ORDER BY created_at DESC").bind(session.sub).all();
+          return json({ exams: e.results || [], chapters: c.results || [] });
+        } catch { return json({ error: "Exam database migration is not applied yet." }, 503); }
+      }
+      if (url.pathname === "/api/exams" && request.method === "POST") {
+        const b = await bodyJson(request), name = typeof b?.name === "string" ? b.name.trim() : "", date = typeof b?.exam_date === "string" ? b.exam_date : "";
+        if (!name || name.length > 100) return json({ error: "Exam name must be 1–100 characters." }, 400);
+        if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(date) || Number.isNaN(Date.parse(date + "T00:00:00Z"))) return json({ error: "Choose a valid exam date." }, 400);
+        const id = crypto.randomUUID();
+        try { await env.DB.prepare("INSERT INTO exams(id,user_id,name,exam_date) VALUES(?,?,?,?)").bind(id,session.sub,name,date).run(); return json({ exam: { id,name,exam_date:date } },201); }
+        catch { return json({ error: "Could not save exam. Check the database migration." },500); }
+      }
+      const em = url.pathname.match(/^\\/api\\/exams\\/([0-9a-f-]{36})$/i);
+      if (em && request.method === "DELETE") {
+        try { const r=await env.DB.prepare("DELETE FROM exams WHERE id=? AND user_id=?").bind(em[1],session.sub).run(); if(!r.meta?.changes)return json({error:"Exam not found."},404); await env.DB.prepare("DELETE FROM chapters WHERE exam_id=? AND user_id=?").bind(em[1],session.sub).run(); return json({ok:true}); }
+        catch { return json({error:"Could not delete exam."},500); }
+      }
+      if (url.pathname === "/api/chapters" && request.method === "POST") {
+        const b=await bodyJson(request), title=typeof b?.title==="string"?b.title.trim():"", subject=typeof b?.subject==="string"?b.subject:"", examId=typeof b?.exam_id==="string"?b.exam_id:"";
+        const subjects=["Mathematics","Science","Social Science","English","Hindi","Telugu","IT-402","Skill Education","Vocational Education"];
+        if(!title||title.length>150)return json({error:"Chapter name must be 1–150 characters."},400);
+        if(!subjects.includes(subject))return json({error:"Choose a valid subject."},400);
+        const exam=await env.DB.prepare("SELECT id FROM exams WHERE id=? AND user_id=?").bind(examId,session.sub).first();
+        if(!exam)return json({error:"Choose one of your exams."},400);
+        const id=crypto.randomUUID();
+        try { await env.DB.prepare("INSERT INTO chapters(id,user_id,exam_id,subject,title) VALUES(?,?,?,?,?)").bind(id,session.sub,examId,subject,title).run(); return json({chapter:{id,exam_id:examId,subject,title,status:"not_started"}},201); }
+        catch { return json({error:"Could not save chapter."},500); }
+      }
+      const cm=url.pathname.match(/^\\/api\\/chapters\\/([0-9a-f-]{36})$/i);
+      if(cm&&request.method==="PATCH"){
+        const b=await bodyJson(request), allowed=["not_started","learning","revising","mastered"];
+        if(!allowed.includes(b?.status))return json({error:"Choose a valid status."},400);
+        try{const r=await env.DB.prepare("UPDATE chapters SET status=? WHERE id=? AND user_id=?").bind(b.status,cm[1],session.sub).run();if(!r.meta?.changes)return json({error:"Chapter not found."},404);return json({ok:true});}catch{return json({error:"Could not update chapter."},500);}
+      }
+      if(cm&&request.method==="DELETE"){try{const r=await env.DB.prepare("DELETE FROM chapters WHERE id=? AND user_id=?").bind(cm[1],session.sub).run();if(!r.meta?.changes)return json({error:"Chapter not found."},404);return json({ok:true});}catch{return json({error:"Could not delete chapter."},500);}}
+      return json({error:"API route not found."},404);
+    }
+
     if (url.pathname.startsWith("/api/tasks")) {
       const session = await readSession(request, env.SESSION_SECRET);
       if (!session) return json({ error: "Please sign in to access your tasks." }, 401);

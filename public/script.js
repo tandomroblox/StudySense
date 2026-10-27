@@ -252,12 +252,41 @@ form.addEventListener("submit", async event => {
   }
 });
 
+
+const examForm=document.querySelector("#examForm"), examName=document.querySelector("#examName"), examDate=document.querySelector("#examDate"), examList=document.querySelector("#examList"), examMessage=document.querySelector("#examMessage");
+const chapterForm=document.querySelector("#chapterForm"), chapterExam=document.querySelector("#chapterExam"), chapterSubject=document.querySelector("#chapterSubject"), chapterName=document.querySelector("#chapterName"), chapterList=document.querySelector("#chapterList"), chapterMessage=document.querySelector("#chapterMessage"), studyPlan=document.querySelector("#studyPlan");
+let exams=[], chapters=[];
+const statuses=[["not_started","Not started"],["learning","Learning"],["revising","Revising"],["mastered","Mastered"]];
+examDate.min=new Date().toISOString().slice(0,10);
+function makeNode(tag,cls,text){const el=document.createElement(tag);if(cls)el.className=cls;if(text!==undefined)el.textContent=text;return el}
+function examReadiness(id){const list=chapters.filter(c=>c.exam_id===id);return list.length?Math.round(list.reduce((n,c)=>n+({not_started:0,learning:35,revising:70,mastered:100}[c.status]),0)/list.length):0}
+function renderExams(){
+ const today=new Date();today.setHours(0,0,0,0);const upcoming=exams.filter(e=>new Date(e.exam_date+"T00:00:00")>=today);
+ document.querySelector("#upcomingExams").textContent=upcoming.length;
+ document.querySelector("#syllabusCoverage").textContent=(chapters.length?Math.round(chapters.filter(c=>c.status==="mastered").length/chapters.length*100):0)+"%";
+ document.querySelector("#readinessScore").textContent=(upcoming.length?Math.round(upcoming.reduce((n,e)=>n+examReadiness(e.id),0)/upcoming.length):0)+"%";
+ document.querySelector("#examCount").textContent=exams.length+" exams";
+ chapterExam.replaceChildren();if(!exams.length)chapterExam.append(new Option("Add an exam first",""));else exams.forEach(e=>chapterExam.append(new Option(e.name,e.id)));
+ examList.replaceChildren();if(!exams.length)examList.append(makeNode("p","empty","No exams yet. Add your next exam above."));
+ exams.forEach(e=>{const card=makeNode("article","exam-card"),top=makeNode("div","exam-card-top"),info=makeNode("div"),title=makeNode("div","exam-title",e.name),date=new Date(e.exam_date+"T00:00:00"),days=Math.ceil((date-today)/86400000),meta=makeNode("div","exam-meta",(days<0?"Date passed":days===0?"Today":days+" days remaining")+" · Readiness "+examReadiness(e.id)+"%"),del=makeNode("button","small-delete","Delete"),bar=makeNode("div","exam-progress"),fill=makeNode("span");del.onclick=async()=>{if(!confirm("Delete this exam and its chapters?"))return;try{await api("/api/exams/"+e.id,{method:"DELETE"});await loadExams()}catch(err){examMessage.textContent=err.message}};fill.style.width=examReadiness(e.id)+"%";bar.append(fill);info.append(title,meta);top.append(info,del);card.append(top,bar);examList.append(card)});
+ chapterList.replaceChildren();if(!chapters.length)chapterList.append(makeNode("p","empty","Add chapters to track your syllabus."));
+ chapters.forEach(c=>{const row=makeNode("div","chapter-row"),main=makeNode("div","chapter-main"),title=makeNode("div","exam-title",c.title),meta=makeNode("div","chapter-meta",c.subject+" · "+(exams.find(e=>e.id===c.exam_id)?.name||"Exam")),controls=makeNode("div","chapter-controls"),select=document.createElement("select"),del=makeNode("button","small-delete","×");statuses.forEach(s=>select.append(new Option(s[1],s[0])));select.value=c.status;select.onchange=async()=>{try{await api("/api/chapters/"+c.id,{method:"PATCH",body:JSON.stringify({status:select.value})});await loadExams()}catch(err){chapterMessage.textContent=err.message;select.value=c.status}};del.onclick=async()=>{try{await api("/api/chapters/"+c.id,{method:"DELETE"});await loadExams()}catch(err){chapterMessage.textContent=err.message}};main.append(title,meta);controls.append(select,del);row.append(main,controls);chapterList.append(row)});
+ studyPlan.replaceChildren();const pending=chapters.filter(c=>c.status!=="mastered").map(c=>({...c,exam:exams.find(e=>e.id===c.exam_id)})).filter(c=>c.exam&&new Date(c.exam.exam_date+"T00:00:00")>=today).sort((a,b)=>a.exam.exam_date.localeCompare(b.exam.exam_date)).slice(0,7);
+ if(!pending.length){studyPlan.append(makeNode("p","empty",exams.length?"No unfinished chapters for upcoming exams.":"Add exams and chapters to generate a plan."));return}
+ pending.forEach((c,i)=>{const row=makeNode("div","plan-row"),day=makeNode("div","plan-day",i===0?"TODAY":new Date(today.getTime()+i*86400000).toLocaleDateString(undefined,{weekday:"short"}).toUpperCase()),copy=makeNode("div","plan-copy"),title=makeNode("div","exam-title",c.title),meta=makeNode("p","",c.subject+" · "+c.exam.name+" · "+statuses.find(s=>s[0]===c.status)[1]);copy.append(title,meta);row.append(day,copy);studyPlan.append(row)});
+ studyPlan.append(makeNode("p","readiness-note","Readiness is an estimate based on chapter status, not a prediction of exam marks. Suggested chapters are ordered by upcoming exam date."));
+}
+async function loadExams(){const data=await api("/api/exams");exams=data.exams;chapters=data.chapters;renderExams()}
+examForm.addEventListener("submit",async ev=>{ev.preventDefault();const b=examForm.querySelector('button[type="submit"]');b.disabled=true;try{await api("/api/exams",{method:"POST",body:JSON.stringify({name:examName.value.trim(),exam_date:examDate.value})});examName.value="";await loadExams()}catch(e){examMessage.textContent=e.message}finally{b.disabled=false}});
+chapterForm.addEventListener("submit",async ev=>{ev.preventDefault();const b=chapterForm.querySelector('button[type="submit"]');b.disabled=true;try{await api("/api/chapters",{method:"POST",body:JSON.stringify({exam_id:chapterExam.value,subject:chapterSubject.value,title:chapterName.value.trim()})});chapterName.value="";await loadExams()}catch(e){chapterMessage.textContent=e.message}finally{b.disabled=false}});
+
 async function start() {
   try {
     const data = await api("/api/auth/me");
     if (data.user) {
       showSignedIn(data.user);
       await loadTasks();
+      await loadExams();
       if (googleStatus === "linked") taskMessage.textContent = googleMessages.linked;
     } else {
       showSignedOut(googleStatus && googleMessages[googleStatus] ? googleMessages[googleStatus] : "");
