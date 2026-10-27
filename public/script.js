@@ -263,7 +263,7 @@ function examReadiness(id){const list=chapters.filter(c=>c.exam_id===id);return 
 function renderExams(){
  const today=new Date();today.setHours(0,0,0,0);const upcoming=exams.filter(e=>new Date(e.exam_date+"T00:00:00")>=today);
  document.querySelector("#upcomingExams").textContent=upcoming.length;
- document.querySelector("#syllabusCoverage").textContent+(chapters.length?Math.round(chapters.filter(c=>c.status==="mastered").length/chapters.length*100):0)+"%";
+ document.querySelector("#syllabusCoverage").textContent=(chapters.length?Math.round(chapters.filter(c=>c.status==="mastered").length/chapters.length*100):0)+"%";
  document.querySelector("#readinessScore").textContent=(upcoming.length?Math.round(upcoming.reduce((n,e)=>n+examReadiness(e.id),0)/upcoming.length):0)+"%";
  document.querySelector("#examCount").textContent=exams.length+" exams";
  chapterExam.replaceChildren();if(!exams.length)chapterExam.append(new Option("Add an exam first",""));else exams.forEach(e=>chapterExam.append(new Option(e.name,e.id)));
