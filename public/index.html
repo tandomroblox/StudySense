@@ -80,7 +80,7 @@
           </div>
         </form>
         <p id="taskMessage" class="message" role="status" aria-live="polite"></p>
-        <div id="taskList" class="task-list"><p class="empty">Loading your tasks…</p></div>
+        <div class="task-toolbar"><label for="taskFilter">Show</label><select id="taskFilter" aria-label="Filter tasks"><option value="all">All tasks</option><option value="active">Not completed</option><option value="completed">Completed</option></select><span id="visibleTaskCount" class="muted" aria-live="polite"></span></div><div id="taskList" class="task-list"><p class="empty">Loading your tasks…</p></div>
       </section>
     </section>
     <footer>StudySense · Built for better study habits.</footer>
