@@ -257,6 +257,7 @@ async function start() {
     if (data.user) {
       showSignedIn(data.user);
       await loadTasks();
+      if (googleStatus === "linked") taskMessage.textContent = googleMessages.linked;
     } else {
       showSignedOut();
     }
