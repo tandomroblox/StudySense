@@ -100,20 +100,25 @@ export default {
       const password = typeof body?.password === "string" ? body.password : "";
       if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json({ error: "Enter a valid email address." }, 400);
       if (password.length < 10 || password.length > 128) return json({ error: "Use a password between 10 and 128 characters." }, 400);
+      let stage = "checking existing account";
       try {
         const existing = await env.DB.prepare("SELECT id FROM users WHERE email = ?").bind(email).first();
         if (existing) return json({ error: "An account with that email already exists. Try signing in." }, 409);
         const id = crypto.randomUUID();
+        stage = "hashing password";
         const passwordHash = await hashPassword(password);
+        stage = "saving account";
         await env.DB.prepare("INSERT INTO users (id, email, password_hash) VALUES (?, ?, ?)").bind(id, email, passwordHash).run();
+        stage = "creating session";
         const token = await makeSession({ id, email }, env.SESSION_SECRET);
         return json({ user: { id, email } }, 201, { "set-cookie": sessionCookie(token) });
       } catch (error) {
         console.error("StudySense registration failed", {
+          stage,
           name: error instanceof Error ? error.name : "UnknownError",
           message: error instanceof Error ? error.message : String(error)
         });
-        return json({ error: "Could not create the account. Please try again." }, 500);
+        return json({ error: `Account creation failed while ${stage}. Please try again.` }, 500);
       }
     }
 
