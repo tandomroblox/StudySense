@@ -108,7 +108,11 @@ export default {
         await env.DB.prepare("INSERT INTO users (id, email, password_hash) VALUES (?, ?, ?)").bind(id, email, passwordHash).run();
         const token = await makeSession({ id, email }, env.SESSION_SECRET);
         return json({ user: { id, email } }, 201, { "set-cookie": sessionCookie(token) });
-      } catch {
+      } catch (error) {
+        console.error("StudySense registration failed", {
+          name: error instanceof Error ? error.name : "UnknownError",
+          message: error instanceof Error ? error.message : String(error)
+        });
         return json({ error: "Could not create the account. Please try again." }, 500);
       }
     }
