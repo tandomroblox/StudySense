@@ -1,10 +1,21 @@
-
+const authPanel = document.querySelector("#authPanel");
+const appPanel = document.querySelector("#appPanel");
+const authForm = document.querySelector("#authForm");
+const emailInput = document.querySelector("#emailInput");
+const passwordInput = document.querySelector("#passwordInput");
+const authHeading = document.querySelector("#authHeading");
+const authSubmit = document.querySelector("#authSubmit");
+const authMessage = document.querySelector("#authMessage");
+const showLogin = document.querySelector("#showLogin");
+const showRegister = document.querySelector("#showRegister");
+const logoutButton = document.querySelector("#logoutButton");
+const signedInAs = document.querySelector("#signedInAs");
 const form = document.querySelector("#taskForm");
 const taskInput = document.querySelector("#taskInput");
 const subjectInput = document.querySelector("#subjectInput");
 const taskList = document.querySelector("#taskList");
+const taskMessage = document.querySelector("#taskMessage");
 
-// Subject-specific examples
 const subjectExamples = {
   "Mathematics": "e.g. Complete exercise 4.2",
   "Science": "e.g. Revise chemical reactions",
@@ -16,143 +27,213 @@ const subjectExamples = {
   "Skill Education": "e.g. Complete the skill activity",
   "Vocational Education": "e.g. Review today's practical work"
 };
+let authMode = "login";
+let tasks = [];
 
-// Persistent storage
-const STORAGE_KEY = "studysense_tasks";
-
-function loadTasks() {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-
-    if (!saved) return [];
-
-    const parsed = JSON.parse(saved);
-
-    return Array.isArray(parsed) ? parsed.filter(task =>
-      task &&
-      typeof task.id === "string" &&
-      typeof task.title === "string" &&
-      typeof task.subject === "string" &&
-      typeof task.done === "boolean"
-    ) : [];
-  } catch (error) {
-    console.error("Could not load saved tasks:", error);
-    return [];
-  }
+async function api(path, options = {}) {
+  const response = await fetch(path, {
+    credentials: "same-origin",
+    ...options,
+    headers: {
+      ...(options.body ? { "content-type": "application/json" } : {}),
+      ...(options.headers || {})
+    }
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || `Request failed (${response.status})`);
+  return data;
 }
 
-let tasks = loadTasks();
+function setAuthMode(mode) {
+  authMode = mode;
+  const registering = mode === "register";
+  authHeading.textContent = registering ? "Create your account" : "Welcome back";
+  authSubmit.textContent = registering ? "Create account" : "Sign in";
+  passwordInput.autocomplete = registering ? "new-password" : "current-password";
+  showLogin.classList.toggle("active", !registering);
+  showRegister.classList.toggle("active", registering);
+  authMessage.textContent = "";
+}
+showLogin.addEventListener("click", () => setAuthMode("login"));
+showRegister.addEventListener("click", () => setAuthMode("register"));
 
-function saveTasks() {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
-  } catch (error) {
-    console.error("Could not save tasks:", error);
-    alert("Your changes could not be saved. Check browser storage.");
-  }
+function showSignedOut(message = "") {
+  authPanel.hidden = false;
+  appPanel.hidden = true;
+  authMessage.textContent = message;
+  tasks = [];
+}
+function showSignedIn(user) {
+  authPanel.hidden = true;
+  appPanel.hidden = false;
+  signedInAs.textContent = `Signed in as ${user.email}`;
 }
 
-// Update placeholder when subject changes
+authForm.addEventListener("submit", async event => {
+  event.preventDefault();
+  authSubmit.disabled = true;
+  authMessage.textContent = authMode === "register" ? "Creating your account…" : "Signing you in…";
+  try {
+    const user = await api(`/api/auth/${authMode === "register" ? "register" : "login"}`, {
+      method: "POST",
+      body: JSON.stringify({ email: emailInput.value, password: passwordInput.value })
+    });
+    passwordInput.value = "";
+    showSignedIn(user.user);
+    await loadTasks();
+  } catch (error) {
+    authMessage.textContent = error.message;
+  } finally {
+    authSubmit.disabled = false;
+  }
+});
+
+logoutButton.addEventListener("click", async () => {
+  logoutButton.disabled = true;
+  try {
+    await api("/api/auth/logout", { method: "POST" });
+    showSignedOut("You have signed out.");
+    setAuthMode("login");
+  } catch (error) {
+    taskMessage.textContent = error.message;
+  } finally {
+    logoutButton.disabled = false;
+  }
+});
+
 function updateTaskPlaceholder() {
-  taskInput.placeholder =
-    subjectExamples[subjectInput.value] || "Enter a study task";
+  taskInput.placeholder = subjectExamples[subjectInput.value] || "Enter a study task";
 }
-
 subjectInput.addEventListener("change", updateTaskPlaceholder);
 updateTaskPlaceholder();
 
-function renderTasks() {
-  taskList.replaceChildren();
-
-  if (tasks.length === 0) {
-    const empty = document.createElement("p");
-    empty.className = "empty";
-    empty.textContent = "Your study tasks will appear here.";
-    taskList.append(empty);
-  }
-
-  tasks.forEach(task => {
-    const row = document.createElement("div");
-    row.className = `task${task.done ? " done" : ""}`;
-
-    // Completion checkbox
-    const checkbox = document.createElement("input");
-    checkbox.type = "checkbox";
-    checkbox.checked = task.done;
-    checkbox.setAttribute(
-      "aria-label",
-      `Complete ${task.title}`
-    );
-
-    checkbox.addEventListener("change", () => {
-      task.done = checkbox.checked;
-      saveTasks();
-      renderTasks();
-    });
-
-    // Task information
-    const info = document.createElement("div");
-    info.className = "task-info";
-
-    const title = document.createElement("div");
-    title.className = "task-title";
-    title.textContent = task.title;
-
-    const subject = document.createElement("p");
-    subject.textContent = task.subject;
-
-    info.append(title, subject);
-
-    // Delete button
-    const remove = document.createElement("button");
-    remove.className = "delete-btn";
-    remove.textContent = "Delete";
-
-    remove.addEventListener("click", () => {
-      tasks = tasks.filter(item => item.id !== task.id);
-      saveTasks();
-      renderTasks();
-    });
-
-    row.append(checkbox, info, remove);
-    taskList.append(row);
-  });
-
-  // Dashboard statistics
+function updateStats() {
   const completed = tasks.filter(task => task.done).length;
   const total = tasks.length;
-  const rate = total
-    ? Math.round((completed / total) * 100)
-    : 0;
-
   document.querySelector("#totalTasks").textContent = total;
   document.querySelector("#completedTasks").textContent = completed;
-  document.querySelector("#completionRate").textContent = `${rate}%`;
-
+  document.querySelector("#completionRate").textContent =
+    `${total ? Math.round((completed / total) * 100) : 0}%`;
   document.querySelector("#taskCount").textContent =
     `${total} task${total === 1 ? "" : "s"}`;
 }
 
-// Add a new task
-form.addEventListener("submit", event => {
-  event.preventDefault();
+function renderTasks() {
+  taskList.replaceChildren();
+  if (tasks.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "empty";
+    empty.textContent = "No tasks yet. Add your first study task above!";
+    taskList.append(empty);
+  }
 
+  for (const task of tasks) {
+    const row = document.createElement("div");
+    row.className = `task${task.done ? " done" : ""}`;
+
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.checked = task.done;
+    checkbox.setAttribute("aria-label", `Complete ${task.title}`);
+    checkbox.addEventListener("change", async () => {
+      checkbox.disabled = true;
+      try {
+        await api(`/api/tasks/${encodeURIComponent(task.id)}`, {
+          method: "PATCH", body: JSON.stringify({ done: checkbox.checked })
+        });
+        task.done = checkbox.checked;
+        renderTasks();
+      } catch (error) {
+        taskMessage.textContent = error.message;
+        checkbox.checked = task.done;
+        checkbox.disabled = false;
+      }
+    });
+
+    const info = document.createElement("div");
+    info.className = "task-info";
+    const title = document.createElement("div");
+    title.className = "task-title";
+    title.textContent = task.title;
+    const subject = document.createElement("p");
+    subject.textContent = task.subject;
+    info.append(title, subject);
+
+    const remove = document.createElement("button");
+    remove.className = "delete-btn";
+    remove.textContent = "Delete";
+    remove.setAttribute("aria-label", `Delete ${task.title}`);
+    remove.addEventListener("click", async () => {
+      remove.disabled = true;
+      try {
+        await api(`/api/tasks/${encodeURIComponent(task.id)}`, { method: "DELETE" });
+        tasks = tasks.filter(item => item.id !== task.id);
+        taskMessage.textContent = "";
+        renderTasks();
+      } catch (error) {
+        taskMessage.textContent = error.message;
+        remove.disabled = false;
+      }
+    });
+
+    row.append(checkbox, info, remove);
+    taskList.append(row);
+  }
+  updateStats();
+}
+
+async function loadTasks() {
+  taskMessage.textContent = "";
+  taskList.innerHTML = '<p class="empty">Loading your tasks…</p>';
+  try {
+    const data = await api("/api/tasks");
+    tasks = data.tasks.map(task => ({
+      id: task.id, title: task.title, subject: task.subject, done: task.completed === 1 || task.done === true
+    }));
+    renderTasks();
+  } catch (error) {
+    if (error.message.includes("sign in")) {
+      showSignedOut("Your session expired. Please sign in again.");
+      return;
+    }
+    taskList.innerHTML = "";
+    taskMessage.textContent = error.message;
+  }
+}
+
+form.addEventListener("submit", async event => {
+  event.preventDefault();
   const title = taskInput.value.trim();
   if (!title) return;
-
-  tasks.push({
-    id: crypto.randomUUID(),
-    title,
-    subject: subjectInput.value,
-    done: false
-  });
-
-  saveTasks();
-
-  taskInput.value = "";
-  updateTaskPlaceholder();
-  renderTasks();
+  const button = form.querySelector('button[type="submit"]');
+  button.disabled = true;
+  taskMessage.textContent = "";
+  try {
+    await api("/api/tasks", {
+      method: "POST",
+      body: JSON.stringify({ title, subject: subjectInput.value })
+    });
+    taskInput.value = "";
+    updateTaskPlaceholder();
+    await loadTasks();
+  } catch (error) {
+    taskMessage.textContent = error.message;
+  } finally {
+    button.disabled = false;
+  }
 });
 
-// Initial display
-renderTasks();
+async function start() {
+  try {
+    const data = await api("/api/auth/me");
+    if (data.user) {
+      showSignedIn(data.user);
+      await loadTasks();
+    } else {
+      showSignedOut();
+    }
+  } catch {
+    showSignedOut("Could not connect to StudySense. Refresh the page and try again.");
+  }
+}
+start();

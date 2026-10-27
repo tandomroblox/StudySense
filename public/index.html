@@ -1,10 +1,10 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#0b1020">
+  <meta name="description" content="A personal study planner that keeps your tasks synced to your account.">
   <title>StudySense</title>
   <link rel="stylesheet" href="style.css">
   <script src="script.js" defer></script>
@@ -14,7 +14,6 @@
     <a class="brand" href="#">Study<span>Sense</span></a>
     <span class="status">YOUR STUDY SPACE</span>
   </header>
-
   <main class="container">
     <section class="welcome">
       <p class="eyebrow">YOUR PERSONAL STUDY DASHBOARD</p>
@@ -22,59 +21,59 @@
       <p class="muted">Small steps today. Better preparation tomorrow.</p>
     </section>
 
-    <section class="stats">
-      <article class="card">
-        <p class="muted">Total tasks</p>
-        <h2 id="totalTasks">0</h2>
-      </article>
-      <article class="card">
-        <p class="muted">Completed</p>
-        <h2 id="completedTasks">0</h2>
-      </article>
-      <article class="card">
-        <p class="muted">Completion</p>
-        <h2 id="completionRate">0%</h2>
-      </article>
-    </section>
-
-    <section class="card planner">
-      <div class="section-heading">
-        <div>
-          <p class="eyebrow">STAY ON TRACK</p>
-          <h2>Study planner</h2>
-        </div>
-        <span id="taskCount" class="pill">0 tasks</span>
+    <section id="authPanel" class="card auth-panel">
+      <p class="eyebrow">YOUR ACCOUNT</p>
+      <h2 id="authHeading">Welcome to StudySense</h2>
+      <p class="muted">Sign in to keep your study tasks saved to your account.</p>
+      <div class="auth-tabs" role="group" aria-label="Account action">
+        <button type="button" id="showLogin" class="tab active">Sign in</button>
+        <button type="button" id="showRegister" class="tab">Create account</button>
       </div>
-
-      <form id="taskForm">
-        <label for="taskInput">What do you need to study?</label>
-        <input id="taskInput" type="text"
-          placeholder="e.g. Complete maths homework" required>
-
-        <div class="form-row">
-          <div class="field">
-            <label for="subjectInput">Subject</label>
-            <select id="subjectInput">
-              <option>Mathematics</option>
-              <option>Science</option>
-              <option>Social Science</option>
-              <option>English</option>
-              <option>Hindi</option>
-              <option>Telugu</option>
-              <option>IT-402</option>
-              <option>Skill Education</option>
-              <option>Vocational Education</option>
-            </select>
-          </div>
-          <button type="submit">+ Add task</button>
-        </div>
+      <form id="authForm">
+        <label for="emailInput">Email</label>
+        <input id="emailInput" type="email" autocomplete="email" maxlength="254" required placeholder="you@example.com">
+        <label for="passwordInput">Password</label>
+        <input id="passwordInput" type="password" autocomplete="current-password" minlength="10" maxlength="128" required placeholder="At least 10 characters">
+        <button id="authSubmit" class="primary-button" type="submit">Sign in</button>
       </form>
-
-      <div id="taskList" class="task-list">
-        <p class="empty">Your study tasks will appear here.</p>
-      </div>
+      <p id="authMessage" class="message" role="status" aria-live="polite"></p>
+      <p class="fine-print">Password sign-in is available now. Google sign-in will be added after OAuth is configured.</p>
     </section>
 
+    <section id="appPanel" hidden>
+      <div class="account-bar">
+        <span id="signedInAs" class="muted"></span>
+        <button id="logoutButton" class="secondary-button" type="button">Sign out</button>
+      </div>
+      <section class="stats">
+        <article class="card"><p class="muted">Total tasks</p><h2 id="totalTasks">0</h2></article>
+        <article class="card"><p class="muted">Completed</p><h2 id="completedTasks">0</h2></article>
+        <article class="card"><p class="muted">Completion</p><h2 id="completionRate">0%</h2></article>
+      </section>
+      <section class="card planner">
+        <div class="section-heading">
+          <div><p class="eyebrow">STAY ON TRACK</p><h2>Study planner</h2></div>
+          <span id="taskCount" class="pill">0 tasks</span>
+        </div>
+        <form id="taskForm">
+          <label for="taskInput">What do you need to study?</label>
+          <input id="taskInput" type="text" maxlength="200" placeholder="e.g. Complete maths homework" required>
+          <div class="form-row">
+            <div class="field">
+              <label for="subjectInput">Subject</label>
+              <select id="subjectInput">
+                <option>Mathematics</option><option>Science</option><option>Social Science</option>
+                <option>English</option><option>Hindi</option><option>Telugu</option>
+                <option>IT-402</option><option>Skill Education</option><option>Vocational Education</option>
+              </select>
+            </div>
+            <button type="submit">+ Add task</button>
+          </div>
+        </form>
+        <p id="taskMessage" class="message" role="status" aria-live="polite"></p>
+        <div id="taskList" class="task-list"><p class="empty">Loading your tasks…</p></div>
+      </section>
+    </section>
     <footer>StudySense · Built for better study habits.</footer>
   </main>
 </body>
