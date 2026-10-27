@@ -378,6 +378,45 @@ export default {
       return json({error:"API route not found."},404);
     }
 
+
+    if (url.pathname === "/api/flashcards" || url.pathname.startsWith("/api/flashcards/") || url.pathname === "/api/practice") {
+      const session = await readSession(request, env.SESSION_SECRET);
+      if (!session) return json({ error: "Please sign in to use learning tools." }, 401);
+      if (url.pathname === "/api/flashcards" && request.method === "GET") {
+        try { const r = await env.DB.prepare("SELECT id,subject,prompt,answer,next_review,created_at FROM flashcards WHERE user_id=? ORDER BY next_review,created_at DESC").bind(session.sub).all(); return json({ flashcards: r.results || [] }); }
+        catch { return json({ error: "Learning tools database migration is not applied yet." }, 503); }
+      }
+      if (url.pathname === "/api/flashcards" && request.method === "POST") {
+        const b = await bodyJson(request), subject = typeof b?.subject === "string" ? b.subject.trim() : "", prompt = typeof b?.prompt === "string" ? b.prompt.trim() : "", answer = typeof b?.answer === "string" ? b.answer.trim() : "";
+        if (!subject || subject.length > 80 || !prompt || prompt.length > 500 || !answer || answer.length > 2000) return json({ error: "Add a subject, a question (up to 500 characters), and an answer (up to 2,000 characters)." }, 400);
+        const id = crypto.randomUUID();
+        try { await env.DB.prepare("INSERT INTO flashcards(id,user_id,subject,prompt,answer,next_review) VALUES(?,?,?,?,?,date('now'))").bind(id,session.sub,subject,prompt,answer).run(); return json({ flashcard:{id,subject,prompt,answer,next_review:new Date().toISOString().slice(0,10)} },201); }
+        catch { return json({ error: "Could not save flashcard. Check the learning tools migration." },500); }
+      }
+      const fm = url.pathname.match(/^\/api\/flashcards\/([0-9a-f-]{36})$/i);
+      if (fm && request.method === "DELETE") { try { const r=await env.DB.prepare("DELETE FROM flashcards WHERE id=? AND user_id=?").bind(fm[1],session.sub).run(); if(!r.meta?.changes)return json({error:"Flashcard not found."},404); return json({ok:true}); } catch { return json({error:"Could not delete flashcard."},500); } }
+      if (fm && request.method === "PATCH") {
+        const b=await bodyJson(request), days=Number(b?.review_in_days);
+        if(!Number.isInteger(days)||days<0||days>365)return json({error:"Review interval must be 0–365 days."},400);
+        try { const r=await env.DB.prepare("UPDATE flashcards SET next_review=date('now', ?) WHERE id=? AND user_id=?").bind("+"+days+" days",fm[1],session.sub).run(); if(!r.meta?.changes)return json({error:"Flashcard not found."},404); return json({ok:true}); } catch { return json({error:"Could not schedule flashcard review."},500); }
+      }
+      return json({error:"API route not found."},404);
+    }
+    if (url.pathname === "/api/practice" && request.method !== "GET" && request.method !== "POST") return json({error:"Method not allowed."},405);
+    if (url.pathname === "/api/practice" && ["GET","POST"].includes(request.method)) {
+      const session = await readSession(request, env.SESSION_SECRET);
+      if (!session) return json({error:"Please sign in to track practice."},401);
+      if (request.method === "GET") {
+        try { const r=await env.DB.prepare("SELECT id,subject,topic,questions,correct,practiced_on,notes FROM practice_logs WHERE user_id=? ORDER BY practiced_on DESC,created_at DESC LIMIT 100").bind(session.sub).all(); return json({practice:r.results||[]}); }
+        catch { return json({error:"Learning tools database migration is not applied yet."},503); }
+      }
+      const b=await bodyJson(request), subject=typeof b?.subject==="string"?b.subject.trim():"", topic=typeof b?.topic==="string"?b.topic.trim():"", questions=Number(b?.questions), correct=Number(b?.correct), notes=typeof b?.notes==="string"?b.notes.trim().slice(0,500):"";
+      if(!subject||subject.length>80||!topic||topic.length>200||!Number.isInteger(questions)||questions<1||questions>10000||!Number.isInteger(correct)||correct<0||correct>questions)return json({error:"Enter a subject, topic, total questions, and a correct count no greater than the total."},400);
+      const id=crypto.randomUUID();
+      try { await env.DB.prepare("INSERT INTO practice_logs(id,user_id,subject,topic,questions,correct,notes) VALUES(?,?,?,?,?,?,?)").bind(id,session.sub,subject,topic,questions,correct,notes).run(); return json({practice:{id,subject,topic,questions,correct,practiced_on:new Date().toISOString().slice(0,10),notes}},201); }
+      catch { return json({error:"Could not save practice result. Check the learning tools migration."},500); }
+    }
+
     if (url.pathname.startsWith("/api/tasks")) {
       const session = await readSession(request, env.SESSION_SECRET);
       if (!session) return json({ error: "Please sign in to access your tasks." }, 401);
