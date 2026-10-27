@@ -237,13 +237,17 @@ export default {
           if (!currentSession || currentSession.sub !== state.userId) {
             return new Response(null, { status: 303, headers: { "location": new URL("/?google=signin_required", request.url).toString(), "set-cookie": clearStateCookie, "cache-control": "no-store" } });
           }
-          const [existingGoogleUser, currentUser] = await Promise.all([
+          const [existingGoogleUser, currentUser, emailUser] = await Promise.all([
             env.DB.prepare("SELECT id FROM users WHERE google_sub = ?").bind(identity.sub).first(),
-            env.DB.prepare("SELECT google_sub FROM users WHERE id = ?").bind(currentSession.sub).first()
+            env.DB.prepare("SELECT google_sub FROM users WHERE id = ?").bind(currentSession.sub).first(),
+            env.DB.prepare("SELECT id FROM users WHERE email = ?").bind(identity.email).first()
           ]);
           if ((existingGoogleUser && existingGoogleUser.id !== currentSession.sub) ||
               (currentUser?.google_sub && currentUser.google_sub !== identity.sub)) {
             return new Response(null, { status: 303, headers: { "location": new URL("/?google=already_linked", request.url).toString(), "set-cookie": clearStateCookie, "cache-control": "no-store" } });
+          }
+          if (emailUser && emailUser.id !== currentSession.sub) {
+            return new Response(null, { status: 303, headers: { "location": new URL("/?google=email_conflict", request.url).toString(), "set-cookie": clearStateCookie, "cache-control": "no-store" } });
           }
           await env.DB.prepare("UPDATE users SET google_sub = ? WHERE id = ?").bind(identity.sub, currentSession.sub).run();
           return new Response(null, { status: 303, headers: { "location": new URL("/?google=linked", request.url).toString(), "set-cookie": clearStateCookie, "cache-control": "no-store" } });
