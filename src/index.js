@@ -379,7 +379,7 @@ export default {
     }
 
 
-    if (url.pathname === "/api/flashcards" || url.pathname.startsWith("/api/flashcards/") || url.pathname === "/api/practice") {
+    if (url.pathname === "/api/flashcards" || url.pathname.startsWith("/api/flashcards/")) {
       const session = await readSession(request, env.SESSION_SECRET);
       if (!session) return json({ error: "Please sign in to use learning tools." }, 401);
       if (url.pathname === "/api/flashcards" && request.method === "GET") {
