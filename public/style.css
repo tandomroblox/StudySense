@@ -103,3 +103,18 @@ footer { text-align: center; color: #707b98; font-size: 12px; padding: 32px 0; }
 .plan-day{min-width:70px;color:#8b9cff;font-size:11px;font-weight:800}
 .readiness-note{font-size:12px;color:#929bb6;line-height:1.5}
 @media(max-width:560px){.exam-form{align-items:stretch;flex-direction:column}.exam-form button{width:100%}.chapter-row{align-items:stretch;flex-direction:column}.chapter-controls select{flex:1;max-width:none}.plan-row{align-items:flex-start}}
+
+
+/* Exam centre and focus tools polish */
+.exam-center form button { align-self: flex-start; justify-self: start; width: auto; }
+.exam-center form input, .exam-center form select { display: block; }
+.exam-stats { margin: 16px 0 22px; }
+.exam-stats .card { padding: 16px; }
+.focus-tools { margin-top: 20px; }
+.focus-clock { font-size: clamp(36px, 8vw, 56px); font-weight: 800; letter-spacing: -2px; text-align: center; font-variant-numeric: tabular-nums; margin: 18px 0; }
+.focus-controls { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; }
+.focus-controls button { min-width: 96px; }
+.focus-note { text-align: center; font-size: 12px; color: #929bb6; }
+@media(max-width:560px){ .exam-center form button { width: auto; align-self: flex-start; } .exam-stats .card { padding: 12px 9px; } }
+
+.learning-tools{margin-top:20px}.learning-list{display:grid;gap:10px;margin-top:16px}.learning-card{background:#10182b;border:1px solid #ffffff14;border-radius:12px;padding:14px;min-width:0}.learning-card details{margin-top:12px}.learning-card summary{color:#aab6ff;cursor:pointer;font-size:13px}.learning-card details p{white-space:pre-wrap;overflow-wrap:anywhere}.learning-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.learning-actions button{font-size:12px;padding:9px 11px}.learning-tools form textarea{width:100%;padding:13px;border:1px solid #303b59;border-radius:9px;background:#0e1528;color:white;font:inherit;resize:vertical}.learning-tools form button{margin-top:14px;align-self:flex-start}.learning-tools .form-row{align-items:end}@media(max-width:560px){.learning-actions button{flex:1}.learning-tools .form-row{flex-direction:column;align-items:stretch}}
