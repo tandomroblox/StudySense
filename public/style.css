@@ -41,6 +41,12 @@ input, select {
 }
 input:focus, select:focus, button:focus-visible { outline: 2px solid #a3afff; outline-offset: 2px; }
 .primary-button { width: 100%; margin-top: 18px; }
+.google-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; background: #f8f9fc; color: #202124; margin: 18px 0 0; }
+.google-button:hover { background: #e8ebf2; }
+.google-button span { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: white; color: #4285f4; font-weight: 800; }
+.auth-divider { display: flex; align-items: center; gap: 12px; color: #707b98; font-size: 12px; margin: 16px 0 4px; }
+.auth-divider::before, .auth-divider::after { content: ""; height: 1px; flex: 1; background: #ffffff18; }
+.account-actions { display: flex; gap: 8px; }
 .fine-print { color: #707b98; font-size: 12px; line-height: 1.5; margin-bottom: 0; }
 .message { color: #ffcf8a; font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
 .account-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
@@ -65,6 +71,8 @@ footer { text-align: center; color: #707b98; font-size: 12px; padding: 32px 0; }
 @media (max-width: 560px) {
   .topbar { padding: 18px 6%; }
   .status { font-size: 9px; }
+  .account-actions { flex-wrap: wrap; justify-content: flex-end; }
+  .account-actions button { padding: 10px 12px; font-size: 12px; }
   .container { width: 92%; }
   .welcome { padding-top: 35px; }
   .stats { gap: 8px; }
