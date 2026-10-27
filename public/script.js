@@ -306,3 +306,14 @@ if ("serviceWorker" in navigator && window.isSecureContext) {
     });
   });
 }
+
+
+// Lightweight focus timer; session count is stored locally on this device.
+const focusClock=document.querySelector("#focusClock"),focusStart=document.querySelector("#focusStart"),focusPause=document.querySelector("#focusPause"),focusReset=document.querySelector("#focusReset"),focusSessions=document.querySelector("#focusSessions"),focusNote=document.querySelector("#focusNote");
+let focusRemaining=25*60,focusInterval=null,focusCount=Number(localStorage.getItem("studysense-focus-sessions")||0);
+function renderFocus(){focusClock.textContent=String(Math.floor(focusRemaining/60)).padStart(2,"0")+":"+String(focusRemaining%60).padStart(2,"0");focusSessions.textContent=focusCount+" session"+(focusCount===1?"":"s");}
+function stopFocus(){if(focusInterval!==null){clearInterval(focusInterval);focusInterval=null;}}
+focusStart.addEventListener("click",()=>{if(focusInterval!==null)return;focusNote.textContent="Focus time — you've got this!";focusInterval=setInterval(()=>{focusRemaining--;renderFocus();if(focusRemaining<=0){stopFocus();focusRemaining=0;focusCount++;localStorage.setItem("studysense-focus-sessions",String(focusCount));renderFocus();focusNote.textContent="Session complete! Take a short break, then reset for another round.";focusStart.disabled=true;try{if("Notification"in window&&Notification.permission==="granted")new Notification("StudySense focus session complete",{body:"Nice work. Take a short break."});}catch{} }},1000);});
+focusPause.addEventListener("click",()=>{stopFocus();focusNote.textContent="Paused — resume when you're ready.";});
+focusReset.addEventListener("click",()=>{stopFocus();focusRemaining=25*60;focusStart.disabled=false;focusNote.textContent="25-minute focus session";renderFocus();});
+renderFocus();
