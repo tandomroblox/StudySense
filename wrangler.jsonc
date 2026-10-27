@@ -4,6 +4,9 @@
   "$schema": "https://developers.cloudflare.com/workers/wrangler/config-schema.json",
   "name": "studysense",
   "compatibility_date": "2026-10-27",
+  "vars": {
+    "GOOGLE_CLIENT_ID": "162780986933-ojjeqgh3vom75n63i8p9e9c4bog1sfkt.apps.googleusercontent.com"
+  },
   "observability": {
     "logs": {
       "enabled": true,
