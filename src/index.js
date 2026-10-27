@@ -237,8 +237,12 @@ export default {
           if (!currentSession || currentSession.sub !== state.userId) {
             return new Response(null, { status: 303, headers: { "location": new URL("/?google=signin_required", request.url).toString(), "set-cookie": clearStateCookie, "cache-control": "no-store" } });
           }
-          const existingGoogleUser = await env.DB.prepare("SELECT id FROM users WHERE google_sub = ?").bind(identity.sub).first();
-          if (existingGoogleUser && existingGoogleUser.id !== currentSession.sub) {
+          const [existingGoogleUser, currentUser] = await Promise.all([
+            env.DB.prepare("SELECT id FROM users WHERE google_sub = ?").bind(identity.sub).first(),
+            env.DB.prepare("SELECT google_sub FROM users WHERE id = ?").bind(currentSession.sub).first()
+          ]);
+          if ((existingGoogleUser && existingGoogleUser.id !== currentSession.sub) ||
+              (currentUser?.google_sub && currentUser.google_sub !== identity.sub)) {
             return new Response(null, { status: 303, headers: { "location": new URL("/?google=already_linked", request.url).toString(), "set-cookie": clearStateCookie, "cache-control": "no-store" } });
           }
           await env.DB.prepare("UPDATE users SET google_sub = ? WHERE id = ?").bind(identity.sub, currentSession.sub).run();
@@ -256,14 +260,13 @@ export default {
           user = { id, email: identity.email };
         }
         const token = await makeSession(user, env.SESSION_SECRET);
-        return new Response(null, {
-          status: 303,
-          headers: {
-            "location": new URL("/", request.url).toString(),
-            "set-cookie": [sessionCookie(token), clearStateCookie].join(", "),
-            "cache-control": "no-store"
-          }
+        const headers = new Headers({
+          "location": new URL("/", request.url).toString(),
+          "cache-control": "no-store"
         });
+        headers.append("set-cookie", sessionCookie(token));
+        headers.append("set-cookie", clearStateCookie);
+        return new Response(null, { status: 303, headers });
       } catch (error) {
         console.error("StudySense Google OAuth failed", {
           name: error instanceof Error ? error.name : "UnknownError",
