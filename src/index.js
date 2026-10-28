@@ -505,6 +505,32 @@ export default {
         } catch { return json({ error: "Could not save the library item. Check migration 0006." }, 503); }
       }
       const libraryMatch = url.pathname.match(/^\/api\/library\/([0-9a-f-]{36})$/i);
+      if (libraryMatch && request.method === "PUT") {
+        const body = await bodyJson(request);
+        const grade = Number(body?.grade);
+        const subject = typeof body?.subject === "string" ? body.subject.trim() : "";
+        const textbook = typeof body?.textbook === "string" ? body.textbook.trim() : "";
+        const bookPart = typeof body?.book_part === "string" ? body.book_part.trim() : "";
+        const chapter = typeof body?.chapter_title === "string" ? body.chapter_title.trim() : "";
+        const itemType = typeof body?.item_type === "string" ? body.item_type : "";
+        const title = typeof body?.title === "string" ? body.title.trim() : "";
+        const content = typeof body?.content === "string" ? body.content.trim() : "";
+        const subjects = ["Mathematics","Science","Social Science","English","Hindi","Telugu","IT-402","Skill Education","Vocational Education"];
+        if (!Number.isInteger(grade) || grade < 6 || grade > 10 || !subjects.includes(subject) ||
+            textbook.length > 160 || bookPart.length > 80 || chapter.length > 180 ||
+            !["note","formula","definition","doubt"].includes(itemType) ||
+            !title || title.length > 160 || !content || content.length > 8000) {
+          return json({ error: "Check the class, subject, item type, title, and content (up to 8,000 characters)." }, 400);
+        }
+        try {
+          const existing = await env.DB.prepare("SELECT id FROM study_library_items WHERE id=? AND user_id=?").bind(libraryMatch[1],session.sub).first();
+          if (!existing) return json({ error: "Library item not found." }, 404);
+          await env.DB.prepare(
+            "UPDATE study_library_items SET grade=?,subject=?,textbook=?,book_part=?,chapter_title=?,item_type=?,title=?,content=?,updated_at=datetime('now') WHERE id=? AND user_id=?"
+          ).bind(grade,subject,textbook,bookPart,chapter,itemType,title,content,libraryMatch[1],session.sub).run();
+          return json({ item: { id: libraryMatch[1],grade,subject,textbook,book_part:bookPart,chapter_title:chapter,item_type:itemType,title,content } });
+        } catch { return json({ error: "Could not update the library item." }, 500); }
+      }
       if (libraryMatch && request.method === "DELETE") {
         try {
           const result = await env.DB.prepare("DELETE FROM study_library_items WHERE id=? AND user_id=?").bind(libraryMatch[1],session.sub).run();
