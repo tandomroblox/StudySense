@@ -31,24 +31,111 @@ window.STUDYSENSE_SYLLABUS = {
   }
 };
 
-// Present Part I and Part II separately in the tracker, and expose language subjects.
-// For subjects whose exact edition-specific contents are not verified, keep the
-// subject selectable but do not fabricate chapter names.
-for (const [grade, subjects] of Object.entries(window.STUDYSENSE_SYLLABUS)) {
-  for (const subject of ["Mathematics", "Social Science"]) {
-    const entry = subjects[subject];
-    if (!entry || !Array.isArray(entry.chapters)) continue;
-    delete subjects[subject];
-    const midpoint = Math.ceil(entry.chapters.length / 2);
-    subjects[subject + " — Part I"] = {
-      book: entry.book + " · Part I",
-      chapters: entry.chapters.slice(0, midpoint)
-    };
-    subjects[subject + " — Part II"] = {
-      book: entry.book + " · Part II",
-      chapters: entry.chapters.slice(midpoint)
+// Assign chapters to volumes only where the chapter-to-part mapping is explicit.
+// Never guess volume membership from a midpoint or list length.
+const verifiedVolumeChapters = {
+  "7": {
+    "Mathematics": {
+      "Part I": [
+        "Large Numbers Around Us", "Arithmetic Expressions", "A Peek Beyond the Point",
+        "Expressions Using Letter-Numbers", "Parallel and Intersecting Lines",
+        "Number Play", "A Tale of Three Intersecting Lines", "Working with Fractions"
+      ],
+      "Part II": [
+        "Geometric Twins", "Operations with Integers", "Finding Common Ground",
+        "Another Peek Beyond the Point", "Connecting the Dots...", "Constructions and Tilings",
+        "Finding the Unknown"
+      ]
+    },
+    "Social Science": {
+      "Part I": [
+        "Geographical Diversity of India", "Understanding the Weather", "Climates of India",
+        "New Beginnings: Cities and States", "The Rise of Empires", "The Age of Reorganisation",
+        "The Gupta Era: An Age of Tireless Creativity", "How the Land Becomes Sacred",
+        "From the Rulers to the Ruled: Types of Governments", "The Constitution of India — An Introduction",
+        "From Barter to Money", "Understanding Markets"
+      ],
+      "Part II": [
+        "The Story of Indian Farming", "India and Her Neighbours",
+        "Empires and Kingdoms: 6th to 10th Centuries", "Turning Tides: 11th and 12th Centuries",
+        "India, a Home to Many", "The State, the Government, and You",
+        "Infrastructure: Engine of India’s Development", "Banks and the Magic of Finance"
+      ]
+    }
+  },
+  "8": {
+    "Mathematics": {
+      "Part I": [
+        "A Square and A Cube", "Power Play", "A Story of Numbers", "Quadrilaterals",
+        "Number Play", "We Distribute, Yet Things Multiply", "Proportional Reasoning-1"
+      ],
+      "Part II": [
+        "Fractions in Disguise", "The Baudhayana-Pythagoras Theorem", "Proportional Reasoning-2",
+        "Exploring Some Geometric Themes", "Tales by Dots and Lines", "Algebra Play", "Area"
+      ]
+    },
+    "Social Science": {
+      "Part I": [
+        "Natural Resources and Their Use", "Reshaping India’s Political Map", "The Rise of the Marathas",
+        "The Colonial Era in India", "Universal Franchise and India’s Electoral System",
+        "The Parliamentary System: Legislature and Executive", "Factors of Production"
+      ],
+      "Part II": [
+        "World Geography: Some Glimpses", "India’s Long Road to Independence",
+        "A Journey through Indian Architecture", "The Role of the Judiciary in Our Society",
+        "Citizenship: Rights and Duties", "Dynamics of Population", "India’s Urban Landscape",
+        "Cultural Currents: 13th to 17th Centuries"
+      ]
+    }
+  }
+};
+
+function splitVerifiedVolumes(grade, subject) {
+  const subjects = window.STUDYSENSE_SYLLABUS[grade];
+  const entry = subjects && subjects[subject];
+  const expected = verifiedVolumeChapters[grade] && verifiedVolumeChapters[grade][subject];
+  if (!entry || !expected || !Array.isArray(entry.chapters)) return false;
+  const expectedNames = [...expected["Part I"], ...expected["Part II"]];
+  // Guard against silent omissions or a stale textbook list.
+  if (expectedNames.length !== entry.chapters.length || expectedNames.some(name => !entry.chapters.includes(name)) ||
+      entry.chapters.some(name => !expectedNames.includes(name))) return false;
+  delete subjects[subject];
+  for (const part of ["Part I", "Part II"]) {
+    subjects[subject + " — " + part] = {
+      book: entry.book.replace(/,?\s*Parts I[–-]II/i, "") + " · " + part,
+      chapters: expected[part].slice(),
+      sourceNote: grade === "8" && subject === "Social Science" && part === "Part II"
+        ? "Important: NCERT currently lists a recall/hold notice for Class 8 Social Science Part II. Confirm the latest official release and your school's booklist before importing or studying this volume."
+        : ""
     };
   }
+  return true;
+}
+
+for (const [grade, subjects] of Object.entries(window.STUDYSENSE_SYLLABUS)) {
+  for (const subject of ["Mathematics", "Social Science"]) {
+    if (grade === "9" && subject === "Social Science" && subjects[subject]?.chapters?.every(title => /^(Part I|Part II) — /.test(title))) {
+      const entry = subjects[subject];
+      const first = entry.chapters.filter(title => title.startsWith("Part I — ")).map(title => title.replace(/^Part I — /, ""));
+      const second = entry.chapters.filter(title => title.startsWith("Part II — ")).map(title => title.replace(/^Part II — /, ""));
+      if (first.length + second.length === entry.chapters.length && first.length && second.length) {
+        delete subjects[subject];
+        subjects[subject + " — Part I"] = { book: "Understanding Society: India and Beyond · Part I", chapters: first };
+        subjects[subject + " — Part II"] = { book: "Understanding Society: India and Beyond · Part II", chapters: second };
+      } else {
+        entry.book += " · part mapping not verified";
+      }
+    } else if (["7", "8"].includes(grade) && verifiedVolumeChapters[grade]?.[subject]) {
+      if (!splitVerifiedVolumes(grade, subject)) {
+        subjects[subject].book += " · part mapping not verified; combined list retained";
+      }
+    } else if (subjects[subject] && /Parts I[–-]II/i.test(subjects[subject].book)) {
+      subjects[subject].book += " · combined list retained until the exact volume mapping is verified";
+    } else if (grade === "9" && subject === "Mathematics" && subjects[subject]) {
+      subjects[subject].book += " · exact volume assignment not verified";
+    }
+  }
+
   if (!subjects.English) {
     const englishBooks = {
       "6": "Poorvi (Class 6)",
@@ -66,7 +153,8 @@ for (const [grade, subjects] of Object.entries(window.STUDYSENSE_SYLLABUS)) {
         "The Thief's Story", "The Midnight Visitor", "A Question of Trust",
         "Footprints Without Feet", "The Making of a Scientist", "The Necklace",
         "Bholi", "The Book That Saved the Earth"
-      ] : []
+      ] : [],
+      sourceNote: grade === "10" ? "Confirm your prescribed English course and the current reduced syllabus with your school." : "Chapter list is not populated because the exact prescribed book/course has not been verified."
     };
   }
   if (!subjects.Hindi) {
@@ -77,7 +165,8 @@ for (const [grade, subjects] of Object.entries(window.STUDYSENSE_SYLLABUS)) {
     };
     subjects.Hindi = {
       book: hindiBooks[grade] || "Hindi textbook · confirm the school's NCERT edition",
-      chapters: []
+      chapters: [],
+      sourceNote: "Chapter list is not populated because the prescribed course/book can vary by school."
     };
   }
 }

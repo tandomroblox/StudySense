@@ -316,6 +316,7 @@ async function loadTasks() {
       id: task.id, title: task.title, subject: task.subject, done: task.completed === 1 || task.done === true
     }));
     renderTasks();
+    window.dispatchEvent(new Event("studysense:data-changed"));
   } catch (error) {
     if (error.message.includes("sign in")) {
       showSignedOut("Your session expired. Please sign in again.");
@@ -361,7 +362,7 @@ function renderSyllabusOptions(){
 function renderSyllabusBookNote(){
  const entry=window.STUDYSENSE_SYLLABUS?.[syllabusClass.value]?.[syllabusSubject.value];
  if(!entry){syllabusBookNote.textContent="This subject's full chapter list has not been verified for this edition yet. No chapters will be guessed or imported.";importSyllabusButton.disabled=true;return}
- syllabusBookNote.textContent=entry.book+" · "+(entry.chapters.length?entry.chapters.length+" chapters available":"Chapter list pending verification — no chapters will be imported.");
+ syllabusBookNote.textContent=entry.book+" · "+(entry.chapters.length?entry.chapters.length+" chapters available":"Chapter list pending verification — no chapters will be imported.")+(entry.sourceNote?"\n"+entry.sourceNote:"");
  importSyllabusButton.disabled=!entry.chapters.length;
 }
 syllabusClass.addEventListener("change",renderSyllabusOptions);
@@ -404,7 +405,7 @@ function renderExams(){
  pending.forEach((c,i)=>{const row=makeNode("div","plan-row"),day=makeNode("div","plan-day",i===0?"TODAY":new Date(today.getTime()+i*86400000).toLocaleDateString(undefined,{weekday:"short"}).toUpperCase()),copy=makeNode("div","plan-copy"),title=makeNode("div","exam-title",c.title),meta=makeNode("p","",c.subject+" · "+c.exam.name+" · "+statuses.find(s=>s[0]===c.status)[1]);copy.append(title,meta);row.append(day,copy);studyPlan.append(row)});
  studyPlan.append(makeNode("p","readiness-note","Readiness is an estimate based on chapter status, not a prediction of exam marks. Suggested chapters are ordered by upcoming exam date."));
 }
-async function loadExams(){const data=await api("/api/exams");exams=data.exams;chapters=data.chapters;renderExams()}
+async function loadExams(){const data=await api("/api/exams");exams=data.exams;chapters=data.chapters;renderExams();window.dispatchEvent(new Event("studysense:data-changed"))}
 examForm.addEventListener("submit",async ev=>{ev.preventDefault();const b=examForm.querySelector('button[type="submit"]');b.disabled=true;try{await api("/api/exams",{method:"POST",body:JSON.stringify({name:examName.value.trim(),exam_date:examDate.value})});examName.value="";await loadExams()}catch(e){examMessage.textContent=e.message}finally{b.disabled=false}});
 chapterForm.addEventListener("submit",async ev=>{ev.preventDefault();const b=chapterForm.querySelector('button[type="submit"]');b.disabled=true;try{await api("/api/chapters",{method:"POST",body:JSON.stringify({exam_id:chapterExam.value,subject:chapterSubject.value,title:chapterName.value.trim()})});chapterName.value="";await loadExams()}catch(e){chapterMessage.textContent=e.message}finally{b.disabled=false}});
 
@@ -414,7 +415,7 @@ const tutorForm=document.querySelector("#tutorForm"),tutorSubject=document.query
 async function loadProfile(){try{const d=await api("/api/profile"),p=d.profile||{};profileName.value=p.display_name||"";profileGrade.value=String(p.grade||9);profileSchool.value=p.school||"";profileGoal.value=String(p.daily_goal_minutes||60);document.querySelector("#syllabusClass").value=profileGrade.value;document.querySelector("#curriculumGrade").value=profileGrade.value;renderSyllabusOptions();renderSyllabusBookNote();renderCurriculumLibrary();}catch(e){profileMessage.textContent=e.message;}}
 profileGrade.addEventListener("change",()=>{document.querySelector("#syllabusClass").value=profileGrade.value;document.querySelector("#curriculumGrade").value=profileGrade.value;renderSyllabusOptions();renderSyllabusBookNote();renderCurriculumLibrary();});
 profileForm.addEventListener("submit",async e=>{e.preventDefault();const b=profileForm.querySelector('button[type="submit"]');b.disabled=true;profileMessage.textContent="Saving…";try{await api("/api/profile",{method:"PUT",body:JSON.stringify({display_name:profileName.value.trim(),grade:Number(profileGrade.value),school:profileSchool.value.trim(),daily_goal_minutes:Number(profileGoal.value)})});profileMessage.textContent="Profile saved.";}catch(err){profileMessage.textContent=err.message;}finally{b.disabled=false;}});
-tutorForm.addEventListener("submit",async e=>{e.preventDefault();tutorSubmit.disabled=true;tutorMessage.textContent="Thinking…";tutorAnswer.hidden=true;try{const d=await api("/api/tutor",{method:"POST",body:JSON.stringify({grade:Number(profileGrade.value),subject:tutorSubject.value,chapter:tutorChapter.value.trim(),question:tutorQuestion.value.trim()})});tutorAnswer.textContent=d.answer||"No answer returned. Please try again.";tutorAnswer.hidden=false;tutorMessage.textContent="AI response · "+(d.model||"StudySense");}catch(err){tutorMessage.textContent=err.message;}finally{tutorSubmit.disabled=false;}});
+tutorForm.addEventListener("submit",async e=>{e.preventDefault();tutorSubmit.disabled=true;tutorMessage.textContent="Thinking…";tutorAnswer.hidden=true;try{const d=await api("/api/tutor",{method:"POST",body:JSON.stringify({grade:Number(profileGrade.value),subject:tutorSubject.value,chapter:tutorChapter.value.trim(),question:tutorQuestion.value.trim(),context:document.querySelector("#tutorContext").value.trim()})});tutorAnswer.textContent=d.answer||"No answer returned. Please try again.";tutorAnswer.hidden=false;tutorMessage.textContent="AI response · "+(d.model||"StudySense");}catch(err){tutorMessage.textContent=err.message;}finally{tutorSubmit.disabled=false;}});
 
 async function start() {
   try {
@@ -446,14 +447,48 @@ if ("serviceWorker" in navigator && window.isSecureContext) {
 }
 
 
-// Lightweight focus timer; session count is stored locally on this device.
+// Focus timer: use an end timestamp so background-tab throttling does not stretch sessions.
 const focusClock=document.querySelector("#focusClock"),focusStart=document.querySelector("#focusStart"),focusPause=document.querySelector("#focusPause"),focusReset=document.querySelector("#focusReset"),focusSessions=document.querySelector("#focusSessions"),focusNote=document.querySelector("#focusNote");
-let focusRemaining=25*60,focusInterval=null,focusCount=Number(localStorage.getItem("studysense-focus-sessions")||0);
-function renderFocus(){focusClock.textContent=String(Math.floor(focusRemaining/60)).padStart(2,"0")+":"+String(focusRemaining%60).padStart(2,"0");focusSessions.textContent=focusCount+" session"+(focusCount===1?"":"s");}
+let focusRemaining=25*60,focusInterval=null,focusEndAt=0,focusCount=0;
+try {
+  const savedCount=Number(localStorage.getItem("studysense-focus-sessions")||0);
+  focusCount=Number.isSafeInteger(savedCount)&&savedCount>=0?savedCount:0;
+} catch {}
+function renderFocus(){
+  focusClock.textContent=String(Math.floor(focusRemaining/60)).padStart(2,"0")+":"+String(focusRemaining%60).padStart(2,"0");
+  focusSessions.textContent=focusCount+" session"+(focusCount===1?"":"s");
+  focusStart.disabled=focusInterval!==null||focusRemaining<=0;
+  focusPause.disabled=focusInterval===null;
+}
 function stopFocus(){if(focusInterval!==null){clearInterval(focusInterval);focusInterval=null;}}
-focusStart.addEventListener("click",()=>{if(focusInterval!==null)return;focusNote.textContent="Focus time — you've got this!";focusInterval=setInterval(()=>{focusRemaining--;renderFocus();if(focusRemaining<=0){stopFocus();focusRemaining=0;focusCount++;localStorage.setItem("studysense-focus-sessions",String(focusCount));renderFocus();focusNote.textContent="Session complete! Take a short break, then reset for another round.";focusStart.disabled=true;try{if("Notification"in window&&Notification.permission==="granted")new Notification("StudySense focus session complete",{body:"Nice work. Take a short break."});}catch{} }},1000);});
-focusPause.addEventListener("click",()=>{stopFocus();focusNote.textContent="Paused — resume when you're ready.";});
-focusReset.addEventListener("click",()=>{stopFocus();focusRemaining=25*60;focusStart.disabled=false;focusNote.textContent="25-minute focus session";renderFocus();});
+function tickFocus(){
+  focusRemaining=Math.max(0,Math.ceil((focusEndAt-Date.now())/1000));
+  renderFocus();
+  if(focusRemaining<=0){
+    stopFocus();focusEndAt=0;focusCount++;
+    try{localStorage.setItem("studysense-focus-sessions",String(focusCount));}catch{}
+    renderFocus();
+    focusNote.textContent="Session complete! Take a short break, then reset for another round.";
+    try{if("Notification"in window&&Notification.permission==="granted")new Notification("StudySense focus session complete",{body:"Nice work. Take a short break."});}catch{}
+  }
+}
+focusStart.addEventListener("click",()=>{
+  if(focusInterval!==null||focusRemaining<=0)return;
+  focusNote.textContent="Focus time — you've got this!";
+  focusEndAt=Date.now()+focusRemaining*1000;
+  focusInterval=setInterval(tickFocus,250);
+  tickFocus();
+});
+focusPause.addEventListener("click",()=>{
+  if(focusInterval===null)return;
+  focusRemaining=Math.max(0,Math.ceil((focusEndAt-Date.now())/1000));
+  stopFocus();focusEndAt=0;renderFocus();
+  focusNote.textContent="Paused — resume when you're ready.";
+});
+focusReset.addEventListener("click",()=>{
+  stopFocus();focusEndAt=0;focusRemaining=25*60;renderFocus();
+  focusNote.textContent="25-minute focus session";
+});
 renderFocus();
 
 
@@ -462,7 +497,7 @@ const flashcardForm=document.querySelector("#flashcardForm"),flashSubject=docume
 const practiceForm=document.querySelector("#practiceForm"),practiceSubject=document.querySelector("#practiceSubject"),practiceTopic=document.querySelector("#practiceTopic"),practiceQuestions=document.querySelector("#practiceQuestions"),practiceCorrect=document.querySelector("#practiceCorrect"),practiceNotes=document.querySelector("#practiceNotes"),practiceList=document.querySelector("#practiceList"),practiceMessage=document.querySelector("#practiceMessage"),practiceAccuracy=document.querySelector("#practiceAccuracy");
 function renderFlashcards(cards){flashcardList.replaceChildren();const today=new Date().toISOString().slice(0,10),due=cards.filter(c=>c.next_review<=today);dueFlashcards.textContent=due.length+" due";if(!cards.length){flashcardList.append(makeNode("p","empty","No flashcards yet. Add one above to start active recall."));return;}cards.forEach(c=>{const card=makeNode("article","learning-card"),title=makeNode("div","exam-title",c.prompt),sub=makeNode("p","chapter-meta",c.subject+" · Due "+c.next_review),details=document.createElement("details"),summary=makeNode("summary","","Reveal answer"),answer=makeNode("p","",c.answer),actions=makeNode("div","learning-actions"),again=makeNode("button","secondary-button","Review tomorrow"),week=makeNode("button","secondary-button","Review in 7 days"),del=makeNode("button","small-delete","Delete");details.append(summary,answer);again.onclick=async()=>{try{await api("/api/flashcards/"+c.id,{method:"PATCH",body:JSON.stringify({review_in_days:1})});await loadLearningTools()}catch(e){flashMessage.textContent=e.message}};week.onclick=async()=>{try{await api("/api/flashcards/"+c.id,{method:"PATCH",body:JSON.stringify({review_in_days:7})});await loadLearningTools()}catch(e){flashMessage.textContent=e.message}};del.onclick=async()=>{try{await api("/api/flashcards/"+c.id,{method:"DELETE"});await loadLearningTools()}catch(e){flashMessage.textContent=e.message}};actions.append(again,week,del);card.append(title,sub,details,actions);flashcardList.append(card);});}
 function renderPractice(items){practiceList.replaceChildren();const total=items.reduce((n,p)=>n+p.questions,0),correct=items.reduce((n,p)=>n+p.correct,0);practiceAccuracy.textContent=(total?Math.round(correct/total*100):0)+"% accuracy";if(!items.length){practiceList.append(makeNode("p","empty","Your practice sessions will appear here."));return;}items.slice(0,10).forEach(p=>{const row=makeNode("article","learning-card"),title=makeNode("div","exam-title",p.topic),meta=makeNode("p","chapter-meta",p.subject+" · "+p.correct+"/"+p.questions+" correct · "+p.practiced_on),notes=makeNode("p","chapter-meta",p.notes||"");row.append(title,meta);if(p.notes)row.append(notes);practiceList.append(row);});}
-async function loadLearningTools(){try{const [f,p]=await Promise.all([api("/api/flashcards"),api("/api/practice")]);renderFlashcards(f.flashcards);renderPractice(p.practice)}catch(e){flashMessage.textContent=e.message;practiceMessage.textContent=e.message;}}
+async function loadLearningTools(){try{const [f,p]=await Promise.all([api("/api/flashcards"),api("/api/practice")]);renderFlashcards(f.flashcards);renderPractice(p.practice);window.dispatchEvent(new Event("studysense:data-changed"))}catch(e){flashMessage.textContent=e.message;practiceMessage.textContent=e.message;}}
 flashcardForm.addEventListener("submit",async ev=>{ev.preventDefault();const b=flashcardForm.querySelector('button[type="submit"]');b.disabled=true;try{await api("/api/flashcards",{method:"POST",body:JSON.stringify({subject:flashSubject.value.trim(),prompt:flashPrompt.value.trim(),answer:flashAnswer.value.trim()})});flashPrompt.value="";flashAnswer.value="";await loadLearningTools()}catch(e){flashMessage.textContent=e.message}finally{b.disabled=false}});
 practiceForm.addEventListener("submit",async ev=>{ev.preventDefault();const q=Number(practiceQuestions.value),c=Number(practiceCorrect.value);if(c>q){practiceMessage.textContent="Correct answers cannot exceed questions attempted.";return;}const b=practiceForm.querySelector('button[type="submit"]');b.disabled=true;try{await api("/api/practice",{method:"POST",body:JSON.stringify({subject:practiceSubject.value.trim(),topic:practiceTopic.value.trim(),questions:q,correct:c,notes:practiceNotes.value.trim()})});practiceTopic.value="";practiceQuestions.value="";practiceCorrect.value="";practiceNotes.value="";practiceMessage.textContent="Practice saved.";await loadLearningTools()}catch(e){practiceMessage.textContent=e.message}finally{b.disabled=false}});
 

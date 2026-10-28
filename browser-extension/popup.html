@@ -1,10 +1,68 @@
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>StudySense Time Guard</title><link rel="stylesheet" href="popup.css"><script src="popup.js" defer></script></head>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>StudySense Time Guard</title>
+  <link rel="stylesheet" href="popup.css">
+  <script src="popup.js" defer></script>
+</head>
 <body>
-  <header><div class="mark">S</div><div><h1>StudySense</h1><p>Website Time Guard</p></div></header>
-  <section class="status-card"><p class="eyebrow">CURRENT STATUS</p><h2 id="phase">Loading…</h2><p id="clock">15:00 used</p><p id="note">Choose which websites to track below.</p></section>
-  <section><label for="domains">Websites to track (one domain per line)</label><textarea id="domains" rows="5" placeholder="youtube.com&#10;instagram.com&#10;example.com"></textarea><p class="hint">Only the domains you list are monitored. The extension asks permission for those sites when you save.</p><button id="save" type="button">Save websites & enable tracking</button><p id="message" role="status"></p></section>
-  <section><h2>Today's tracked time</h2><div id="usage" class="usage"><p class="hint">No tracked time yet.</p></div></section>
-  <footer>15 minutes of tracked website use → 35-minute cooldown. This extension cannot monitor other apps.</footer>
-</body></html>
+  <header>
+    <div class="mark" aria-hidden="true">S</div>
+    <div><h1>StudySense</h1><p>Time Guard · Private usage dashboard</p></div>
+  </header>
+  <section class="status-card" aria-live="polite">
+    <p class="eyebrow">RESTRICTED-SITE ALLOWANCE</p>
+    <h2 id="phase">Loading…</h2>
+    <p id="clock">15:00 / 15:00</p>
+    <p id="note">Refreshing usage data…</p>
+    <div class="status-actions"><button id="pause" class="secondary" type="button">Pause tracking</button><button id="refresh" class="secondary" type="button">Refresh</button></div>
+  </section>
+
+  <section>
+    <h2>Usage overview</h2>
+    <div class="metrics">
+      <div class="metric"><strong id="todayTotal">0m</strong><span>Tracked today</span></div>
+      <div class="metric"><strong id="weekTotal">0m</strong><span>Last 7 days</span></div>
+      <div class="metric"><strong id="siteCount">0</strong><span>Sites today</span></div>
+    </div>
+    <h3>Daily usage · last 7 days</h3>
+    <div id="weekBars" class="week-bars"><p class="muted">Waiting for tracked time…</p></div>
+    <h3>Most-used sites · today</h3>
+    <div id="topSites" class="site-list"><p class="muted">No site data yet.</p></div>
+    <h3>Most-used sites · last 7 days</h3>
+    <div id="topSitesWeek" class="site-list"><p class="muted">No site data yet.</p></div>
+    <details>
+      <summary>Daily history</summary>
+      <div id="dailyHistory" class="daily-history"></div>
+    </details>
+  </section>
+
+  <section class="settings">
+    <h2>Tracking settings</h2>
+    <label for="trackMode">Usage monitoring</label>
+    <select id="trackMode">
+      <option value="selected">Restricted websites only</option>
+      <option value="all">All websites · hostnames only</option>
+    </select>
+    <p class="hint">Restricted-only mode tracks the domains below. All-websites mode asks for permission to read hostnames on every website so you can see your most-used sites. No page content, page titles, search terms, or form data are collected.</p>
+    <label for="domains">Websites subject to the 15-minute allowance</label>
+    <textarea id="domains" rows="4" placeholder="youtube.com&#10;instagram.com&#10;reddit.com" spellcheck="false"></textarea>
+    <p class="hint">Only these domains count toward the 15-minute allowance and are blocked during the 35-minute cooldown. Subdomains are included. Use one domain per line.</p>
+    <label class="checkline"><input id="notificationsEnabled" type="checkbox" checked> Show a browser notification when cooldown starts</label>
+    <button id="save" type="button">Save settings & enable tracking</button>
+    <p id="message" role="status" aria-live="polite"></p>
+  </section>
+
+  <section class="data-controls">
+    <h2>Your local data</h2>
+    <p class="hint">Usage history stays in this browser profile. It is not uploaded to StudySense. The extension keeps up to 90 days of daily site totals.</p>
+    <div class="control-row"><button id="export" class="secondary" type="button">Export CSV</button><button id="clear" class="danger" type="button">Clear history</button></div>
+    <p id="dataMessage" role="status" aria-live="polite"></p>
+  </section>
+  <footer>
+    Time is estimated from the active browser tab while the browser window is focused. It can undercount when the browser delays background alarms. This extension cannot monitor native apps or other browsers and is not tamper-proof parental control. Incognito monitoring is not enabled by default.
+  </footer>
+</body>
+</html>
