@@ -194,7 +194,7 @@ authForm.addEventListener("submit", async event => {
     });
     passwordInput.value = "";
     showSignedIn(user.user);
-    await loadTasks();
+    await Promise.all([loadTasks(), loadExams(), loadLearningTools(), loadProfile()]);
   } catch (error) {
     authMessage.textContent = error.message;
   } finally {
