@@ -123,7 +123,7 @@
     });
     const practiceBySubject = new Map();
     for (const p of recentPractice) {
-      const key = String(p.subject || "").replace(/\\s+—\\s+Part\\s+(?:I|II)$/i, "");
+      const key = String(p.subject || "").replace(/\s+—\s+Part\s+(?:I|II)$/i, "");
       const current = practiceBySubject.get(key) || { questions: 0, correct: 0 };
       current.questions += Number(p.questions) || 0;
       current.correct += Number(p.correct) || 0;
@@ -133,7 +133,7 @@
       const own = chapters.filter(c => c.exam_id === exam.id);
       const statusScore = { not_started: 0, learning: 35, revising: 70, mastered: 100 };
       const coverage = own.length ? Math.round(own.reduce((sum, c) => sum + (statusScore[c.status] || 0), 0) / own.length) : null;
-      const normaliseSubject = value => String(value || "").replace(/\\s+—\\s+Part\\s+(?:I|II)$/i, "");
+      const normaliseSubject = value => String(value || "").replace(/\s+—\s+Part\s+(?:I|II)$/i, "");
       const subjectNames = new Set(own.map(c => normaliseSubject(c.subject)));
       let questions = 0, correct = 0;
       for (const subject of subjectNames) {
@@ -551,7 +551,7 @@
     $("hubDailyPlanMessage").textContent = "Adding suggested tasks…";
     $("hubDailyPlanMessage").className = "hub-error";
     try {
-      const normalizeTaskTitle = title => String(title || "").trim().toLowerCase().replace(/\\s+\\(\\d+ min\\)$/, "");
+      const normalizeTaskTitle = title => String(title || "").trim().toLowerCase().replace(/\s+\(\d+ min\)$/, "");
       const existing = new Set(cache.tasks.filter(task => !(task.done === true || Number(task.completed) === 1))
         .map(task => String(task.subject || "").toLowerCase() + "|" + normalizeTaskTitle(task.title)));
       let added = 0;
