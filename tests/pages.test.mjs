@@ -45,6 +45,21 @@ test("The shared shell has unique IDs and all cross-page destinations exist", ()
   }
 });
 
+test("All class selectors use consistent 2026–27 labels", () => {
+  const shell = read("public/app-shell.html");
+  for (const grade of ["6", "7", "8", "9", "10"]) {
+    assert.ok(shell.includes('value="' + grade + '">Class ' + grade + ' · 2026–27</option>'),
+      "Syllabus import selector must label Class " + grade + " consistently");
+    assert.ok(shell.includes('value="' + grade + '">Class ' + grade + ' · 2026–27</option>') ||
+      grade === "6", "Curriculum selector must use the same academic-year label");
+  }
+  assert.ok(!/Class (?:6|7|8|9|10) · (?:New|Existing)/i.test(shell));
+  const script = read("public/script.js");
+  assert.ok(script.includes('title: "Class 9 · 2026–27"'));
+  assert.ok(script.includes('title: "Class 10 · 2026–27"'));
+  assert.ok(!/title: "Class (?:9|10) · (?:New|existing)/i.test(script));
+});
+
 test("The account menu holds profile controls in the header, not in the page flow", () => {
   const shell = read("public/app-shell.html");
   const header = shell.slice(shell.indexOf('<header class="topbar">'), shell.indexOf("</header>"));

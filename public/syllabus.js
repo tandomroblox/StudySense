@@ -1,5 +1,5 @@
 /* NCERT textbook chapter catalog for the 2026–27 tracker.
- * Class 9 uses the new NCERT books. Class 10 uses the previous textbook set.
+ * Class 9 and Class 10 catalogue entries are labelled for the 2026–27 academic year.
  * Only chapter titles verified against available textbook contents are included.
  * Language and school-specific subjects are intentionally not guessed.
  */
