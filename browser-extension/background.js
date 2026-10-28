@@ -5,7 +5,7 @@ const RULE_BASE = 7100;
 const RULE_LIMIT = RULE_BASE + 1000;
 const MAX_RESTRICTED_DOMAINS = 50;
 const MAX_HISTORY_DAYS = 90;
-const ALL_ORIGINS = ["http://*/*", "https://*/*"];
+const DEFAULT_RESTRICTED_DOMAINS = ["youtube.com","instagram.com","tiktok.com","reddit.com","facebook.com","x.com","twitch.tv","netflix.com"];
 
 function localDayKey(timestamp) {
   const date = new Date(timestamp === undefined ? Date.now() : timestamp);
@@ -92,6 +92,18 @@ async function syncRules(domains, phase) {
   })) : [];
   await chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds, addRules });
 }
+function openBreakPopup() {
+  try {
+    const pending = chrome.windows.create({
+      url: chrome.runtime.getURL("break.html"),
+      type: "popup",
+      width: 460,
+      height: 570,
+      focused: true
+    });
+    if (pending && typeof pending.catch === "function") pending.catch(() => {});
+  } catch (_) {}
+}
 function notifyCooldown() {
   chrome.storage.local.get(["notificationsEnabled"]).then(settings => {
     if (settings.notificationsEnabled === false) return;
@@ -100,7 +112,7 @@ function notifyCooldown() {
         type: "basic",
         iconUrl: "icon.png",
         title: "StudySense · Break time",
-        message: "Your 15-minute allowance for restricted websites is used. The 35-minute cooldown has started.",
+        message: "Your combined 15-minute allowance across restricted websites is used. The 35-minute cooldown has started.",
         priority: 1
       });
     } catch (_) {}
@@ -124,6 +136,7 @@ async function tick() {
   const previousDomain = s.currentDomain || null;
   const previousPhase = phase;
   let todayDelta = 0;
+  let cooldownStarted = false;
 
   if (previousDomain && delta > 0) {
     const startMs = now - delta * 1000;
@@ -147,7 +160,7 @@ async function tick() {
     phase = "cooldown";
     phaseEndsAt = now + COOLDOWN_MS;
     usedSeconds = ALLOWANCE_SECONDS;
-    notifyCooldown();
+    cooldownStarted = previousPhase !== "cooldown";
   }
   const domain = s.enabled ? await activeSite({ ...s, restrictedDomains: restricted }) : null;
   await chrome.storage.local.set({
@@ -163,6 +176,10 @@ async function tick() {
     currentDomain: s.enabled ? domain : null
   });
   await syncRules(restricted, phase);
+  if (cooldownStarted) {
+    notifyCooldown();
+    openBreakPopup();
+  }
   await sendStateChanged();
 }
 function validDomainList(values) {
@@ -224,7 +241,11 @@ async function clearHistory() {
 }
 async function initialize() {
   const s = await state();
-  const domains = Array.isArray(s.restrictedDomains) ? s.restrictedDomains : (Array.isArray(s.trackedDomains) ? s.trackedDomains : []);
+  const storedDomains = Array.isArray(s.restrictedDomains) && s.restrictedDomains.length
+    ? s.restrictedDomains
+    : (Array.isArray(s.trackedDomains) ? s.trackedDomains : []);
+  const seedDefaults = storedDomains.length === 0;
+  const domains = seedDefaults ? [...DEFAULT_RESTRICTED_DOMAINS] : storedDomains;
   await chrome.storage.local.set({
     restrictedDomains: domains,
     trackedDomains: domains,
@@ -235,7 +256,7 @@ async function initialize() {
     lastTickAt: Date.now(),
     currentDomain: null,
     usageByDay: s.usageByDay && typeof s.usageByDay === "object" ? s.usageByDay : {},
-    enabled: typeof s.enabled === "boolean" ? s.enabled : domains.length > 0,
+    enabled: seedDefaults ? true : (typeof s.enabled === "boolean" ? s.enabled : domains.length > 0),
     restrictionDay: s.restrictionDay || localDayKey(),
     notificationsEnabled: s.notificationsEnabled !== false
   });

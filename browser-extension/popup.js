@@ -171,27 +171,13 @@ $("save").addEventListener("click", async () => {
     const restrictedDomains = parseDomains($("domains").value);
     const trackMode = $("trackMode").value;
     if (trackMode === "selected" && restrictedDomains.length === 0) throw new Error("Add at least one restricted domain or choose all-website tracking.");
-    const current = await chrome.storage.local.get(["trackMode"]);
-    if (trackMode === "all") {
-      const hasAll = await chrome.permissions.contains({ origins: ["http://*/*", "https://*/*"] });
-      const allowed = hasAll || await chrome.permissions.request({ origins: ["http://*/*", "https://*/*"] });
-      if (!allowed) throw new Error("All-site permission was not granted. Nothing was changed.");
-    } else {
-      const origins = restrictedDomains.flatMap(domain => ["http://" + domain + "/*", "https://" + domain + "/*", "http://*." + domain + "/*", "https://*." + domain + "/*"]);
-      const alreadyAllowed = await chrome.permissions.contains({ origins });
-      const allowed = alreadyAllowed || await chrome.permissions.request({ origins });
-      if (!allowed) throw new Error("Website permission was not granted. Nothing was changed.");
-      // Drop broad all-site access only after selected-site access is secured.
-      if (current.trackMode === "all") {
-        await chrome.permissions.remove({ origins: ["http://*/*", "https://*/*"] });
-      }
-    }
     await send("configure", { settings: { restrictedDomains, trackMode, notificationsEnabled: $("notificationsEnabled").checked } });
-    $("message").textContent = "Saved. Site totals stay in this browser profile.";
+    $("message").textContent = "Saved. Monitoring is active; no per-site confirmation is needed.";
     await refresh();
   } catch (error) {
     $("message").textContent = error.message || "Could not save settings.";
   } finally { button.disabled = false; }
+
 });
 $("pause").addEventListener("click", async () => {
   $("pause").disabled = true;

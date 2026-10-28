@@ -20,6 +20,7 @@ jobs:
           node --check public/study-tools.js
           node --check browser-extension/background.js
           node --check browser-extension/popup.js
+          node --check browser-extension/break.js
           node --input-type=module --check < src/index.js
       - name: Check project configuration and assets
         run: node scripts/check-quality.mjs

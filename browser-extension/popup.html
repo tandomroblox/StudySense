@@ -46,10 +46,10 @@
       <option value="selected">Restricted websites only</option>
       <option value="all">All websites · hostnames only</option>
     </select>
-    <p class="hint">Restricted-only mode tracks the domains below. All-websites mode asks for permission to read hostnames on every website so you can see your most-used sites. No page content, page titles, search terms, or form data are collected.</p>
+    <p class="hint">Tracking starts automatically with common entertainment sites on first install. Restricted-only mode tracks the domains below; all-websites mode reports hostnames for all active websites. Time Guard uses the browser tab permission already granted at install, so it does not ask for site-by-site confirmation. It never collects page content, titles, search terms, or form data.</p>
     <label for="domains">Websites subject to the 15-minute allowance</label>
     <textarea id="domains" rows="4" placeholder="youtube.com&#10;instagram.com&#10;reddit.com" spellcheck="false"></textarea>
-    <p class="hint">Only these domains count toward the 15-minute allowance and are blocked during the 35-minute cooldown. Subdomains are included. Use one domain per line.</p>
+    <p class="hint">Time counts cumulatively across all domains on this list—not 15 minutes per site. At 15 minutes total, a break popup appears and these sites are blocked for 35 minutes. Subdomains are included. Use one domain per line.</p>
     <label class="checkline"><input id="notificationsEnabled" type="checkbox" checked> Show a browser notification when cooldown starts</label>
     <button id="save" type="button">Save settings & enable tracking</button>
     <p id="message" role="status" aria-live="polite"></p>

@@ -45,9 +45,9 @@ The extension is manually installed as an unpacked Chromium extension; this is n
 
 ### Monitoring and screen-time controls
 
-- **Restricted websites only**: records time for only the domains you select.
-- **All websites — hostnames only**: an optional broader permission that records site hostnames, so daily and weekly most-used-site reports are useful even for websites that are not restricted. It does not collect page text, page titles, URLs' paths, search terms, form entries, or keystrokes.
-- Only the explicit restricted-domain list counts toward the **15-minute allowance** and is blocked during a **35-minute cooldown**.
+- **Restricted websites only**: starts with YouTube, Instagram, TikTok, Reddit, Facebook, X, Twitch, and Netflix flagged automatically; you can edit the list any time without per-site permission prompts.
+- **All websites — hostnames only**: records hostnames for active browser tabs, so daily and weekly reports cover sites outside the restricted list. It does not collect page text, page titles, URL paths, search terms, form entries, or keystrokes; per-site access confirmations are not needed.
+- Time is added cumulatively across the full restricted-domain list. Once combined active time reaches **15 minutes**, a focused break popup appears and those sites are blocked during a **35-minute cooldown**.
 - Daily and seven-day totals, most-used-site lists, recent daily history, local CSV export, pause/resume, notification controls, and clear-history are available from the popup.
 - Usage history is stored in the browser profile and retained for up to 90 days. It is not uploaded to the StudySense website or D1.
 - Time is estimated from the active tab while the browser window is focused. Browser alarm throttling, sleep, crashes, and switching devices can make estimates imperfect.

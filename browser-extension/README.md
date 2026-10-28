@@ -1,6 +1,6 @@
 # StudySense Time Guard
 
-The installable Chrome/Edge Manifest V3 extension used by StudySense's Time Guard feature.
+The installable Chrome/Edge Manifest V3 extension used by StudySense's Time Guard feature. On first install or first update from an unconfigured version, it starts with YouTube, Instagram, TikTok, Reddit, Facebook, X, Twitch, and Netflix already flagged.
 
 ## Recommended install
 
@@ -18,4 +18,4 @@ The .github/workflows/release-time-guard.yml workflow packages only the runtime 
 
 ## Permissions and privacy
 
-Website host permissions are optional. Restricted-site mode requests access only to listed domains. All-website hostname reporting requires broader host permissions. Usage totals remain in the browser profile and are not sent to the StudySense website or account. See the repository README for details and limitations.
+The existing tabs permission allows the extension to read active tab hostnames, and the declarativeNetRequest permission lets it block domains without per-site host grants. No per-site confirmation is requested. Usage totals remain in the browser profile and are not sent to the StudySense website or account. After 15 minutes combined across the flagged list, a break window opens and those sites are blocked for 35 minutes. See the repository README for details and limitations.
