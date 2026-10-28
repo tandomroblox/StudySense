@@ -48,7 +48,7 @@ assert.ok(manifest.permissions.includes("declarativeNetRequest"));
 assert.ok(manifest.permissions.includes("notifications"));
 assert.ok(manifest.optional_host_permissions.includes("http://*/*"));
 assert.ok(manifest.optional_host_permissions.includes("https://*/*"));
-for (const resource of [manifest.background.service_worker, manifest.action.default_popup]) {
+for (const resource of [manifest.background.service_worker, manifest.action.default_popup, ...Object.values(manifest.icons || {}), ...Object.values(manifest.action.default_icon || {})]) {
   assert.ok(fs.existsSync(path.join(root, "browser-extension", resource)), `Missing extension resource: ${resource}`);
 }
 
