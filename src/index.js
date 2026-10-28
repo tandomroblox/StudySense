@@ -419,6 +419,138 @@ export default {
       }
       return json({error:"API route not found."},404);
     }
+
+    // Smart revision queue. Chapter ownership is checked on every write.
+    if (url.pathname === "/api/revisions" && ["GET", "POST"].includes(request.method)) {
+      const session = await readSession(request, env.SESSION_SECRET);
+      if (!session) return json({ error: "Please sign in to manage revision sessions." }, 401);
+      if (request.method === "GET") {
+        try {
+          const result = await env.DB.prepare(
+            "SELECT c.id AS chapter_id,c.exam_id,c.subject,c.title,c.status,e.name AS exam_name,e.exam_date,s.next_review_on,s.last_reviewed_at,s.interval_days,s.repetitions,s.last_rating FROM chapters c JOIN exams e ON e.id=c.exam_id LEFT JOIN chapter_revision_state s ON s.chapter_id=c.id AND s.user_id=c.user_id WHERE c.user_id=? ORDER BY CASE WHEN s.next_review_on<=date('now') THEN 0 WHEN s.next_review_on IS NULL THEN 1 ELSE 2 END,s.next_review_on,e.exam_date LIMIT 100"
+          ).bind(session.sub).all();
+          const rows = result.results || [];
+          return json({ reviews: rows.map(row => ({ ...row, due: !row.next_review_on || row.next_review_on <= new Date().toISOString().slice(0, 10) })) });
+        } catch {
+          return json({ error: "Revision scheduling is not ready yet. Check migration 0006." }, 503);
+        }
+      }
+      const body = await bodyJson(request);
+      const chapterId = typeof body?.chapter_id === "string" ? body.chapter_id : "";
+      const rating = typeof body?.rating === "string" ? body.rating : "";
+      if (!/^[0-9a-f-]{36}$/i.test(chapterId) || !["again", "hard", "good", "easy"].includes(rating)) {
+        return json({ error: "Choose a chapter and a valid review rating." }, 400);
+      }
+      try {
+        const chapter = await env.DB.prepare("SELECT id FROM chapters WHERE id=? AND user_id=?").bind(chapterId, session.sub).first();
+        if (!chapter) return json({ error: "Chapter not found." }, 404);
+        const previous = await env.DB.prepare("SELECT interval_days,repetitions FROM chapter_revision_state WHERE chapter_id=? AND user_id=?").bind(chapterId, session.sub).first();
+        const previousInterval = Number(previous?.interval_days) || 0;
+        const repetitions = Number(previous?.repetitions) || 0;
+        let intervalDays = 1;
+        let nextRepetitions = repetitions + 1;
+        if (rating === "again") { intervalDays = 1; nextRepetitions = 0; }
+        else if (rating === "hard") intervalDays = Math.min(60, Math.max(2, Math.ceil((previousInterval || 1) * 1.2)));
+        else if (rating === "good") intervalDays = Math.min(60, previousInterval ? Math.max(2, Math.ceil(previousInterval * 2)) : 2);
+        else intervalDays = Math.min(60, previousInterval ? Math.max(4, Math.ceil(previousInterval * 2.5)) : 4);
+        const nextReview = new Date(Date.now() + intervalDays * 86400000).toISOString().slice(0, 10);
+        const id = crypto.randomUUID();
+        await env.DB.prepare(
+          "INSERT INTO chapter_revision_state(chapter_id,user_id,next_review_on,last_reviewed_at,interval_days,repetitions,last_rating,updated_at) VALUES(?,?,?,datetime('now'),?,?,?,datetime('now')) ON CONFLICT(chapter_id) DO UPDATE SET user_id=excluded.user_id,next_review_on=excluded.next_review_on,last_reviewed_at=datetime('now'),interval_days=excluded.interval_days,repetitions=excluded.repetitions,last_rating=excluded.last_rating,updated_at=datetime('now')"
+        ).bind(chapterId, session.sub, nextReview, intervalDays, nextRepetitions, rating).run();
+        await env.DB.prepare(
+          "INSERT INTO chapter_revision_logs(id,user_id,chapter_id,rating,previous_interval_days,next_interval_days) VALUES(?,?,?,?,?,?)"
+        ).bind(id, session.sub, chapterId, rating, previousInterval, intervalDays).run();
+        return json({ ok: true, next_review_on: nextReview, interval_days: intervalDays, repetitions: nextRepetitions });
+      } catch {
+        return json({ error: "Could not save the review. Check migration 0006 and try again." }, 503);
+      }
+    }
+
+    // Personal study library, scoped to the signed-in account.
+    if (url.pathname === "/api/library" || url.pathname.startsWith("/api/library/")) {
+      const session = await readSession(request, env.SESSION_SECRET);
+      if (!session) return json({ error: "Please sign in to use your study library." }, 401);
+      if (url.pathname === "/api/library" && request.method === "GET") {
+        try {
+          const result = await env.DB.prepare(
+            "SELECT id,grade,subject,textbook,book_part,chapter_title,item_type,title,content,created_at,updated_at FROM study_library_items WHERE user_id=? ORDER BY updated_at DESC LIMIT 250"
+          ).bind(session.sub).all();
+          return json({ items: result.results || [] });
+        } catch { return json({ error: "The study library is not ready yet. Check migration 0006." }, 503); }
+      }
+      if (url.pathname === "/api/library" && request.method === "POST") {
+        const body = await bodyJson(request);
+        const grade = Number(body?.grade);
+        const subject = typeof body?.subject === "string" ? body.subject.trim() : "";
+        const textbook = typeof body?.textbook === "string" ? body.textbook.trim() : "";
+        const bookPart = typeof body?.book_part === "string" ? body.book_part.trim() : "";
+        const chapter = typeof body?.chapter_title === "string" ? body.chapter_title.trim() : "";
+        const itemType = typeof body?.item_type === "string" ? body.item_type : "";
+        const title = typeof body?.title === "string" ? body.title.trim() : "";
+        const content = typeof body?.content === "string" ? body.content.trim() : "";
+        const subjects = ["Mathematics","Science","Social Science","English","Hindi","Telugu","IT-402","Skill Education","Vocational Education"];
+        if (!Number.isInteger(grade) || grade < 6 || grade > 10 || !subjects.includes(subject) ||
+            textbook.length > 160 || bookPart.length > 80 || chapter.length > 180 ||
+            !["note","formula","definition","doubt"].includes(itemType) ||
+            !title || title.length > 160 || !content || content.length > 8000) {
+          return json({ error: "Check the class, subject, item type, title, and content (up to 8,000 characters)." }, 400);
+        }
+        const id = crypto.randomUUID();
+        try {
+          await env.DB.prepare(
+            "INSERT INTO study_library_items(id,user_id,grade,subject,textbook,book_part,chapter_title,item_type,title,content) VALUES(?,?,?,?,?,?,?,?,?,?)"
+          ).bind(id,session.sub,grade,subject,textbook,bookPart,chapter,itemType,title,content).run();
+          return json({ item: { id,grade,subject,textbook,book_part:bookPart,chapter_title:chapter,item_type:itemType,title,content } }, 201);
+        } catch { return json({ error: "Could not save the library item. Check migration 0006." }, 503); }
+      }
+      const libraryMatch = url.pathname.match(/^\/api\/library\/([0-9a-f-]{36})$/i);
+      if (libraryMatch && request.method === "DELETE") {
+        try {
+          const result = await env.DB.prepare("DELETE FROM study_library_items WHERE id=? AND user_id=?").bind(libraryMatch[1],session.sub).run();
+          if (!result.meta?.changes) return json({ error: "Library item not found." }, 404);
+          return json({ ok: true });
+        } catch { return json({ error: "Could not delete the library item." }, 500); }
+      }
+      return json({ error: "API route not found." }, 404);
+    }
+
+    // Original practice generation; no claim that generated content is official syllabus material.
+    if (url.pathname === "/api/practice/generate" && request.method === "POST") {
+      const session = await readSession(request, env.SESSION_SECRET);
+      if (!session) return json({ error: "Please sign in to generate practice questions." }, 401);
+      if (!env.AI || typeof env.AI.run !== "function") return json({ error: "The AI practice generator is not enabled on the live Worker yet." }, 503);
+      const body = await bodyJson(request);
+      const grade = Number(body?.grade);
+      const subject = typeof body?.subject === "string" ? body.subject.trim() : "";
+      const chapter = typeof body?.chapter === "string" ? body.chapter.trim() : "";
+      const type = typeof body?.type === "string" ? body.type : "mixed";
+      const count = Number(body?.count ?? 5);
+      const context = typeof body?.context === "string" ? body.context.trim() : "";
+      const subjects = ["Mathematics","Science","Social Science","English","Hindi","Telugu","IT-402","Skill Education","Vocational Education"];
+      if (!Number.isInteger(grade) || grade < 6 || grade > 10 || !subjects.includes(subject) ||
+          chapter.length > 180 || !["mcq","short","numerical","mixed"].includes(type) ||
+          !Number.isInteger(count) || count < 1 || count > 10 || context.length > 6000) {
+        return json({ error: "Choose a valid class, subject, question type, and 1–10 questions. Lesson context is limited to 6,000 characters." }, 400);
+      }
+      try {
+        const systemPrompt = "You are StudySense, a careful school practice-question writer for Indian students in Classes 6–10. Create original, age-appropriate questions only. Do not claim questions are official NCERT/CBSE questions and do not invent citations, page numbers, or official syllabus claims. If source context is supplied, stay grounded in it and do not introduce unsupported facts. If no context is supplied, make reasonable general practice for the stated class, subject, and topic and state briefly that it is general practice. Give clear numbering. For MCQs provide four options and mark answers in a separate answer key at the end. For short-answer questions provide concise key points. For numericals show the answer and essential working in the answer key. Avoid ambiguity, and ensure the answer key matches the questions.";
+        const userPrompt = "Class: " + grade + "\nSubject: " + subject + "\nTopic or chapter: " + (chapter || "General " + subject + " practice") +
+          "\nQuestion type: " + type + "\nNumber of questions: " + count +
+          "\nSource material (treat as the only authoritative source when supplied):\n" + (context || "(No source text supplied; generate clearly labelled general practice.)");
+        const result = await env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
+          messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userPrompt }],
+          max_tokens: 1800, temperature: 0.25
+        });
+        const practice = typeof result?.response === "string" ? result.response.trim() : "";
+        if (!practice) return json({ error: "The generator returned an empty practice set. Please try again." }, 502);
+        return json({ practice, model: "Cloudflare Workers AI", source_grounded: Boolean(context) });
+      } catch (error) {
+        console.error("StudySense practice generation failed", { name: error instanceof Error ? error.name : "UnknownError" });
+        return json({ error: "Could not generate practice right now. Please try again." }, 502);
+      }
+    }
+
     if (url.pathname === "/api/practice" && request.method !== "GET" && request.method !== "POST") return json({error:"Method not allowed."},405);
     if (url.pathname === "/api/practice" && ["GET","POST"].includes(request.method)) {
       const session = await readSession(request, env.SESSION_SECRET);
