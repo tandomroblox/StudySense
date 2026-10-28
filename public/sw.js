@@ -1,7 +1,8 @@
-const CACHE_NAME = "studysense-shell-v4";
+const CACHE_NAME = "studysense-shell-v5";
 const APP_SHELL = [
   "/", "/index.html", "/planner.html", "/exams.html", "/syllabus.html",
-  "/learn.html", "/library.html", "/profile.html", "/app-shell.html", "/app-shell.js",
+  "/learn.html", "/library.html", "/profile.html", "/time-guard.html", "/time-guard.css",
+  "/app-shell.html", "/app-shell.js",
   "/style.css", "/script.js", "/syllabus.js", "/study-tools.css", "/study-tools.js",
   "/manifest.webmanifest", "/icon.svg"
 ];
