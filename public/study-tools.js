@@ -22,6 +22,13 @@
         <p id="hubReadinessMessage" class="hub-error" role="status"></p>
       </section>
       <section class="productivity-panel">
+        <h3>Today's suggested plan</h3>
+        <p class="hub-muted">Builds a manageable session from your daily goal, due revisions, and chapters for the nearest upcoming exams. Suggestions become tasks only when you choose.</p>
+        <div id="hubDailyPlan" class="hub-list"><p class="hub-empty">Preparing your study plan…</p></div>
+        <div class="hub-row-actions"><button id="hubAddPlanTasks" type="button">Add plan to my tasks</button><button id="hubRefreshPlan" class="hub-btn-secondary" type="button">Refresh plan</button></div>
+        <p id="hubDailyPlanMessage" class="hub-error" role="status"></p>
+      </section>
+      <section class="productivity-panel">
         <h3>Smart revision queue</h3>
         <p class="hub-muted">Review a chapter and rate how it felt. The next date adjusts to your rating.</p>
         <div id="hubRevisionQueue" class="hub-list"><p class="hub-empty">Loading your revisions…</p></div>
@@ -63,6 +70,7 @@
           <label for="hubLibraryTitle">Title</label><input id="hubLibraryTitle" maxlength="160" placeholder="A short label" required />
           <label for="hubLibraryContent">Content</label><textarea id="hubLibraryContent" maxlength="8000" rows="4" placeholder="Write your note, formula, definition, or question…" required></textarea>
           <button id="hubSaveLibrary" type="submit">Save to library</button>
+          <button id="hubCancelLibraryEdit" class="hub-btn-secondary" type="button" hidden>Cancel edit</button>
         </form>
         <p id="hubLibraryMessage" class="hub-error" role="status"></p>
         <div id="hubLibraryItems" class="hub-list"><p class="hub-empty">Loading your library…</p></div>
@@ -94,6 +102,8 @@
   let refreshPromise = null;
   let accountGeneration = 0;
   let pendingReview = false;
+  let editingLibraryItemId = null;
+  let currentDailyPlan = [];
   let lastPractice = null;
 
   function renderReadiness() {
@@ -155,6 +165,108 @@
     const date = new Date(String(value) + "T00:00:00");
     return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
   }
+  function buildDailyPlan() {
+    const profileGoal = Number(cache.profile?.daily_goal_minutes);
+    const goalMinutes = Number.isInteger(profileGoal) && profileGoal >= 15 && profileGoal <= 600 ? profileGoal : 60;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayKey = today.getFullYear() + "-" + String(today.getMonth() + 1).padStart(2, "0") + "-" + String(today.getDate()).padStart(2, "0");
+    const due = cache.revisions
+      .filter(item => !item.next_review_on || item.next_review_on <= todayKey)
+      .sort((a, b) => {
+        const dateCompare = String(a.next_review_on || "0000-00-00").localeCompare(String(b.next_review_on || "0000-00-00"));
+        if (dateCompare) return dateCompare;
+        const examCompare = String(a.exam_date || "9999-99-99").localeCompare(String(b.exam_date || "9999-99-99"));
+        return examCompare || String(a.title).localeCompare(String(b.title));
+      });
+    const futureExams = cache.exams
+      .filter(exam => String(exam.exam_date || "") >= todayKey)
+      .sort((a, b) => String(a.exam_date).localeCompare(String(b.exam_date)));
+    const statusPriority = { not_started: 0, learning: 1, revising: 2, mastered: 3 };
+    const chapterCandidates = futureExams.flatMap(exam =>
+      cache.chapters.filter(chapter => chapter.exam_id === exam.id && chapter.status !== "mastered")
+        .map(chapter => ({ ...chapter, exam_name: exam.name, exam_date: exam.exam_date }))
+    ).sort((a, b) =>
+      String(a.exam_date).localeCompare(String(b.exam_date)) ||
+      (statusPriority[a.status] ?? 1) - (statusPriority[b.status] ?? 1) ||
+      String(a.title).localeCompare(String(b.title))
+    );
+    const usedChapterIds = new Set();
+    const plan = [];
+    let minutes = 0;
+    const append = item => {
+      if (plan.length >= 6 || minutes + item.minutes > goalMinutes) return false;
+      plan.push(item);
+      minutes += item.minutes;
+      if (item.chapter_id) usedChapterIds.add(item.chapter_id);
+      return true;
+    };
+
+    for (const item of due) {
+      if (plan.length >= 6) break;
+      const subject = String(item.subject || "").replace(/\s+—\s+Part\s+(?:I|II)$/i, "");
+      const minutesForReview = Math.min(15, goalMinutes);
+      if (!append({
+        id: "review-" + item.chapter_id,
+        kind: "revision",
+        chapter_id: item.chapter_id,
+        subject,
+        title: "Revise: " + item.title,
+        minutes: minutesForReview,
+        reason: item.next_review_on && item.next_review_on < todayKey ? "Overdue revision" : item.next_review_on === todayKey ? "Due today" : "New chapter — first review",
+        exam_name: item.exam_name
+      })) break;
+    }
+
+    for (const chapter of chapterCandidates) {
+      if (plan.length >= 6) break;
+      if (usedChapterIds.has(chapter.id)) continue;
+      const subject = String(chapter.subject || "").replace(/\s+—\s+Part\s+(?:I|II)$/i, "");
+      const remaining = goalMinutes - minutes;
+      const studyMinutes = Math.min(25, remaining);
+      if (studyMinutes < 10) break;
+      const when = Math.ceil((new Date(String(chapter.exam_date) + "T00:00:00") - today) / 86400000);
+      if (!append({
+        id: "chapter-" + chapter.id,
+        kind: "study",
+        chapter_id: chapter.id,
+        subject,
+        title: (chapter.status === "not_started" ? "Start: " : "Study: ") + chapter.title,
+        minutes: studyMinutes,
+        reason: (chapter.exam_name || "Upcoming exam") + (when === 0 ? " · today" : when > 0 ? " · " + when + " day(s) away" : ""),
+        exam_name: chapter.exam_name
+      })) break;
+    }
+    return { items: plan, goalMinutes, plannedMinutes: minutes };
+  }
+  function renderDailyPlan() {
+    const out = $("hubDailyPlan");
+    out.replaceChildren();
+    const { items, goalMinutes, plannedMinutes } = buildDailyPlan();
+    currentDailyPlan = items;
+    const summary = make("p", "hub-muted", plannedMinutes + " of " + goalMinutes + " daily goal minutes planned · " + items.length + " suggested task(s)");
+    out.append(summary);
+    if (!items.length) {
+      const hasExamOrChapter = cache.exams.length || cache.chapters.length;
+      out.append(make("p", "hub-empty", hasExamOrChapter
+        ? "Your upcoming chapters are already marked mastered or no more items fit your daily goal. Add a revision date or increase your daily goal to plan more."
+        : "Add an exam and chapters in the Exam command centre to get a personalized daily plan."));
+      $("hubAddPlanTasks").disabled = true;
+      return;
+    }
+    $("hubAddPlanTasks").disabled = false;
+    items.forEach((item, index) => {
+      const row = make("article", "hub-row");
+      const top = make("div", "hub-row-top");
+      const copy = make("div");
+      copy.append(make("div", "hub-row-title", (index + 1) + ". " + item.title));
+      copy.append(make("div", "hub-row-meta", item.subject + " · " + item.minutes + " min · " + item.reason));
+      top.append(copy, make("span", "pill", item.kind === "revision" ? "Revise" : "Study"));
+      row.append(top);
+      out.append(row);
+    });
+  }
+
   function renderRevisions() {
     const out = $("hubRevisionQueue");
     out.replaceChildren();
@@ -223,6 +335,25 @@
       row.append(top);
       row.append(make("p", "hub-library-content", item.content));
       const actions = make("div", "hub-row-actions");
+      const edit = make("button", "hub-btn-secondary", "Edit");
+      edit.type = "button";
+      edit.addEventListener("click", () => {
+        editingLibraryItemId = item.id;
+        $("hubLibraryGrade").value = String(item.grade);
+        $("hubLibrarySubject").value = item.subject;
+        $("hubTextbook").value = item.textbook || "";
+        $("hubBookPart").value = item.book_part || "";
+        $("hubLibraryChapter").value = item.chapter_title || "";
+        $("hubItemType").value = item.item_type || "note";
+        $("hubLibraryTitle").value = item.title;
+        $("hubLibraryContent").value = item.content;
+        $("hubSaveLibrary").textContent = "Update library item";
+        $("hubCancelLibraryEdit").hidden = false;
+        $("hubLibraryMessage").textContent = "Editing “" + item.title + "”.";
+        $("hubLibraryMessage").className = "hub-error";
+        $("hubLibraryForm").scrollIntoView({ behavior: "smooth", block: "center" });
+        $("hubLibraryTitle").focus({ preventScroll: true });
+      });
       const remove = make("button", "hub-btn-secondary", "Delete item");
       remove.type = "button";
       remove.addEventListener("click", async () => {
@@ -237,7 +368,7 @@
           remove.disabled = false;
         }
       });
-      actions.append(remove);
+      actions.append(edit, remove);
       row.append(actions);
       out.append(row);
     }
@@ -245,6 +376,7 @@
 
   function renderMetricsSummary() {
     renderReadiness();
+    renderDailyPlan();
     renderRevisions();
     renderLibrary();
   }
@@ -361,21 +493,36 @@
     } finally { button.disabled = false; }
   });
 
+  function resetLibraryEditor() {
+    editingLibraryItemId = null;
+    $("hubLibraryForm").reset();
+    $("hubSaveLibrary").textContent = "Save to library";
+    $("hubCancelLibraryEdit").hidden = true;
+  }
+  $("hubCancelLibraryEdit").addEventListener("click", () => {
+    resetLibraryEditor();
+    $("hubLibraryMessage").textContent = "Edit cancelled.";
+    $("hubLibraryMessage").className = "hub-error";
+  });
   $("hubLibraryForm").addEventListener("submit", async event => {
     event.preventDefault();
     const button = $("hubSaveLibrary");
     button.disabled = true;
-    $("hubLibraryMessage").textContent = "Saving…";
+    $("hubLibraryMessage").textContent = editingLibraryItemId ? "Updating…" : "Saving…";
+    $("hubLibraryMessage").className = "hub-error";
+    const payload = {
+      grade: Number($("hubLibraryGrade").value), subject: $("hubLibrarySubject").value,
+      textbook: $("hubTextbook").value.trim(), book_part: $("hubBookPart").value.trim(),
+      chapter_title: $("hubLibraryChapter").value.trim(), item_type: $("hubItemType").value,
+      title: $("hubLibraryTitle").value.trim(), content: $("hubLibraryContent").value.trim()
+    };
+    const targetId = editingLibraryItemId;
     try {
-      await safeApi("/api/library", { method: "POST", body: JSON.stringify({
-        grade: Number($("hubLibraryGrade").value), subject: $("hubLibrarySubject").value,
-        textbook: $("hubTextbook").value.trim(), book_part: $("hubBookPart").value.trim(),
-        chapter_title: $("hubLibraryChapter").value.trim(), item_type: $("hubItemType").value,
-        title: $("hubLibraryTitle").value.trim(), content: $("hubLibraryContent").value.trim()
-      })});
-      $("hubLibraryTitle").value = "";
-      $("hubLibraryContent").value = "";
-      $("hubLibraryMessage").textContent = "Saved to your personal study library.";
+      await safeApi(targetId ? "/api/library/" + encodeURIComponent(targetId) : "/api/library", {
+        method: targetId ? "PUT" : "POST", body: JSON.stringify(payload)
+      });
+      resetLibraryEditor();
+      $("hubLibraryMessage").textContent = targetId ? "Library item updated." : "Saved to your personal study library.";
       $("hubLibraryMessage").className = "hub-error hub-success";
       const data = await safeApi("/api/library");
       cache.library = data.items || [];
@@ -383,6 +530,46 @@
     } catch (error) {
       $("hubLibraryMessage").textContent = error.message;
       $("hubLibraryMessage").className = "hub-error";
+    } finally { button.disabled = false; }
+  });
+
+  $("hubRefreshPlan").addEventListener("click", async () => {
+    $("hubDailyPlanMessage").textContent = "Refreshing…";
+    try {
+      await refreshData();
+      $("hubDailyPlanMessage").textContent = "Plan refreshed from your latest exams and revision queue.";
+      $("hubDailyPlanMessage").className = "hub-error hub-success";
+    } catch (error) {
+      $("hubDailyPlanMessage").textContent = error.message || "Could not refresh your plan.";
+      $("hubDailyPlanMessage").className = "hub-error";
+    }
+  });
+  $("hubAddPlanTasks").addEventListener("click", async () => {
+    const button = $("hubAddPlanTasks");
+    if (!currentDailyPlan.length) return;
+    button.disabled = true;
+    $("hubDailyPlanMessage").textContent = "Adding suggested tasks…";
+    $("hubDailyPlanMessage").className = "hub-error";
+    try {
+      const existing = new Set(cache.tasks.filter(task => !(task.done === true || Number(task.completed) === 1))
+        .map(task => String(task.subject || "").toLowerCase() + "|" + String(task.title || "").trim().toLowerCase()));
+      let added = 0;
+      let skipped = 0;
+      for (const item of currentDailyPlan) {
+        const key = item.subject.toLowerCase() + "|" + item.title.trim().toLowerCase();
+        if (existing.has(key)) { skipped++; continue; }
+        await safeApi("/api/tasks", { method: "POST", body: JSON.stringify({ title: item.title + " (" + item.minutes + " min)", subject: item.subject }) });
+        existing.add(key);
+        added++;
+      }
+      await safeApi("/api/tasks").then(data => { cache.tasks = data.tasks || []; });
+      $("hubDailyPlanMessage").textContent = added + " task(s) added" + (skipped ? "; " + skipped + " existing task(s) skipped." : ".");
+      $("hubDailyPlanMessage").className = "hub-error hub-success";
+      window.dispatchEvent(new Event("studysense:data-changed"));
+      renderDailyPlan();
+    } catch (error) {
+      $("hubDailyPlanMessage").textContent = error.message || "Could not add all suggested tasks. Check your task list for successful additions before retrying.";
+      $("hubDailyPlanMessage").className = "hub-error";
     } finally { button.disabled = false; }
   });
 
