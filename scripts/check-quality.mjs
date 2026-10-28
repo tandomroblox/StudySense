@@ -13,7 +13,8 @@ const requiredFiles = [
   "public/script.js", "public/syllabus.js", "public/sw.js", "public/study-tools.js",
   "public/study-tools.css", "tests/pages.test.mjs", "browser-extension/manifest.json",
   "browser-extension/README.md", "browser-extension/background.js", "browser-extension/popup.html",
-  "browser-extension/popup.css", "browser-extension/popup.js",
+  "browser-extension/popup.css", "browser-extension/popup.js", "browser-extension/break.html",
+  "browser-extension/break.css", "browser-extension/break.js",
   ".github/workflows/release-time-guard.yml",
   "migrations/0005_profiles.sql", "migrations/0006_revision_library.sql"
 ];
@@ -58,8 +59,9 @@ assert.equal(manifest.manifest_version, 3);
 assert.ok(manifest.permissions.includes("storage"));
 assert.ok(manifest.permissions.includes("declarativeNetRequest"));
 assert.ok(manifest.permissions.includes("notifications"));
-assert.ok(manifest.optional_host_permissions.includes("http://*/*"));
-assert.ok(manifest.optional_host_permissions.includes("https://*/*"));
+assert.equal(manifest.version, "1.2.0");
+assert.equal(Object.hasOwn(manifest, "optional_host_permissions"), false, "Default site tracking should not require per-site host confirmation");
+assert.ok(read("browser-extension/background.js").includes("DEFAULT_RESTRICTED_DOMAINS"));
 for (const resource of [manifest.background.service_worker, manifest.action.default_popup, ...Object.values(manifest.icons || {}), ...Object.values(manifest.action.default_icon || {})]) {
   assert.ok(fs.existsSync(path.join(root, "browser-extension", resource)), `Missing extension resource: ${resource}`);
 }
@@ -80,3 +82,6 @@ const extensionRelease = read(".github/workflows/release-time-guard.yml");
 assert.ok(extensionRelease.includes("softprops/action-gh-release@v2"), "Time Guard packages must be published as a release");
 assert.ok(extensionRelease.includes("StudySense-Time-Guard.zip"), "Time Guard release must contain the installable ZIP");
 assert.ok(extensionRelease.includes("contents: write"), "Time Guard release workflow needs release-write permission");
+
+assert.ok(read("browser-extension/background.js").includes('chrome.windows.create'), "Cooldown must open the custom break popup");
+assert.ok(read(".github/workflows/release-time-guard.yml").includes("browser-extension/break.js"), "The release ZIP must include break popup assets");
