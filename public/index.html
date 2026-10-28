@@ -47,6 +47,25 @@
 
     <section id="appPanel" hidden>
       <section class="card exam-center"><div class="section-heading"><div><p class="eyebrow">PLAN AHEAD</p><h2>Exam command centre</h2></div><span id="examCount" class="pill">0 exams</span></div><section class="stats exam-stats"><article class="card"><p class="muted">Upcoming exams</p><h2 id="upcomingExams">0</h2></article><article class="card"><p class="muted">Syllabus mastered</p><h2 id="syllabusCoverage">0%</h2></article><article class="card"><p class="muted">Readiness score</p><h2 id="readinessScore">0%</h2></article></section><form id="examForm"><label for="examName">Exam name</label><input id="examName" required maxlength="100" placeholder="e.g. Science final"><label for="examDate">Exam date</label><input id="examDate" type="date" required><button type="submit">Add exam</button></form><p id="examMessage" class="message"></p><div id="examList"></div><h2>Syllabus tracker</h2><form id="chapterForm"><label for="chapterExam">Exam</label><select id="chapterExam" required></select><label for="chapterSubject">Subject</label><select id="chapterSubject"><option>Mathematics</option><option>Science</option><option>Social Science</option><option>English</option><option>Hindi</option><option>Telugu</option><option>IT-402</option><option>Skill Education</option><option>Vocational Education</option></select><label for="chapterName">Chapter</label><input id="chapterName" required maxlength="150"><button type="submit">Add chapter</button></form><p id="chapterMessage" class="message"></p><div id="chapterList"></div><h2>Suggested study plan</h2><div id="studyPlan"></div></section>
+      <section class="card curriculum-library">
+        <div class="section-heading">
+          <div><p class="eyebrow">OFFICIAL NCERT SOURCES</p><h2>Curriculum library</h2></div>
+          <span class="pill">2026–27</span>
+        </div>
+        <p class="muted">Choose your class to open the official textbook and syllabus sources. StudySense links to NCERT/CBSE originals instead of hosting copied textbook PDFs, so updates and corrections come from the publisher.</p>
+        <label for="curriculumGrade">Class</label>
+        <select id="curriculumGrade">
+          <option value="6">Class 6 · New NCERT books</option>
+          <option value="7">Class 7 · New NCERT books</option>
+          <option value="8">Class 8 · New NCERT books</option>
+          <option value="9">Class 9 · New curriculum</option>
+          <option value="10">Class 10 · Existing books for 2026–27</option>
+        </select>
+        <div id="curriculumDetails" class="curriculum-details" aria-live="polite">
+          <p class="empty">Loading official curriculum sources…</p>
+        </div>
+        <p class="fine-print">Class 9 follows the new NCF-SE 2023 curriculum for 2026–27. Class 10 continues with the existing textbooks for 2026–27; the new Class 10 books are scheduled for a later session. Confirm the subjects/language options selected by your school.</p>
+      </section>
       <div class="account-bar">
         <span id="signedInAs" class="muted"></span>
         <div class="account-actions"><button id="installAppButton" class="secondary-button" type="button" hidden>Install app</button><button id="connectGoogleButton" class="secondary-button" type="button">Connect Google</button><button id="logoutButton" class="secondary-button" type="button">Sign out</button></div>
