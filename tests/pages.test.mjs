@@ -95,7 +95,7 @@ test("Time Guard is a public landing page with a packaged extension download and
   const page = read("public/time-guard.html");
   const shell = read("public/app-shell.html");
   const worker = read("public/sw.js");
-  assert.match(page, /<title>.*Time Guard.*<\\/title>/i);
+  assert.ok(page.includes("<title>Time Guard · StudySense</title>"), "The public page must have the correct title");
   assert.ok(page.includes("https://github.com/tandomroblox/StudySense/releases/latest/download/StudySense-Time-Guard.zip"), "The page must link to the packaged extension release");
   assert.ok(page.includes("chrome://extensions/") && page.includes("edge://extensions/"), "The install page must cover Chrome and Edge");
   assert.ok(page.includes("manifest.json"), "The install page must explain which extracted folder to load");

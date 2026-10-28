@@ -1,3 +1,4 @@
+body.time-guard-page .site-nav { display:flex !important; }
 body.time-guard-page { background:radial-gradient(ellipse at 50% -8%,#26355e 0%,transparent 47%),#0b1020; }
 .time-guard-page .topbar { grid-template-columns:auto minmax(0,1fr) auto auto; }
 .time-guard-page .container { width:min(1000px,90%); }
