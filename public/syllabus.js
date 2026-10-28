@@ -20,7 +20,7 @@ window.STUDYSENSE_SYLLABUS = {
     "Social Science": { book: "Exploring Society: India and Beyond, Parts I–II", chapters: ["Natural Resources and Their Use","Reshaping India’s Political Map","The Rise of the Marathas","The Colonial Era in India","Universal Franchise and India’s Electoral System","The Parliamentary System: Legislature and Executive","Factors of Production","World Geography: Some Glimpses","India’s Long Road to Independence","A Journey through Indian Architecture","The Role of the Judiciary in Our Society","Citizenship: Rights and Duties","Dynamics of Population","India’s Urban Landscape","Cultural Currents: 13th to 17th Centuries"] }
   },
   "9": {
-    "Mathematics": { book: "Ganita Manjari", chapters: ["Number Systems","Polynomials","Coordinate Geometry","Linear Equations in Two Variables","Introduction to Euclid's Geometry","Lines and Angles","Triangles","Quadrilaterals","Propositions and their Converses","How Quantities Combine: Understanding Data","The World of Algorithms","Quadrilaterals (Part II)","Two Variables, One Line","Math of Space: Surface Area and Volume"] },
+    "Mathematics": { book: "Ganita Manjari, Parts I–II", chapters: ["Orienting Yourself: The Use of Coordinates","Introduction to Linear Polynomials","The World of Numbers","Exploring Algebraic Identities","I'm Up and Down, and Round and Round","Measuring Space: Perimeter and Area","The Mathematics of Maybe: Introduction to Probability","Predicting What Comes Next: Exploring Sequences and Progressions","Propositions and their Converses","How Quantities Combine: Understanding Data","The World of Algorithms","Quadrilaterals","Two Variables, One Line","Math of Space: Surface Area and Volume"] },
     "Science": { book: "Exploration", chapters: ["Exploration, Entering the World of Secondary Science","Cell, The Building Block of Life","Tissues in Action","Describing Motion Around Us","Exploring Mixtures and their Separation","How Forces Affect Motion","Work, Energy and Simple Machines","Journey Inside the Atom","Atomic Foundations of Matter","Sound Waves, Characteristics and Applications","Reproduction, How Life Continues","Patterns in Life, Diversity and Classification","Earth as a System, Energy, Matter and Life"] },
     "Social Science": { book: "Understanding Society: India and Beyond, Parts I–II", chapters: ["Part I — Understanding Social Science","Part I — Shaping of the Earth's Surface","Part I — Atmosphere and Climate","Part I — Early Humans and Beginning of Civilisation","Part I — State and Society up to 1000 CE","Part I — Democracy","Part I — Elections","Part I — Building Blocks in Economics: The Problem of Choice","Part I — The Price Puzzle: What Drives the Market","Part II — Oceans and Life","Part II — Life on Earth","Part II — Resistance and Resilience (1000–1700 CE)","Part II — Governance and Public Policy","Part II — Managing Your Personal Finances","Part II — From Ideas to Startups"] }
   },
@@ -87,6 +87,22 @@ const verifiedVolumeChapters = {
         "Cultural Currents: 13th to 17th Centuries"
       ]
     }
+  },
+  "9": {
+    "Mathematics": {
+      "Part I": [
+        "Orienting Yourself: The Use of Coordinates", "Introduction to Linear Polynomials",
+        "The World of Numbers", "Exploring Algebraic Identities",
+        "I'm Up and Down, and Round and Round", "Measuring Space: Perimeter and Area",
+        "The Mathematics of Maybe: Introduction to Probability",
+        "Predicting What Comes Next: Exploring Sequences and Progressions"
+      ],
+      "Part II": [
+        "Propositions and their Converses", "How Quantities Combine: Understanding Data",
+        "The World of Algorithms", "Quadrilaterals", "Two Variables, One Line",
+        "Math of Space: Surface Area and Volume"
+      ]
+    }
   }
 };
 
@@ -125,7 +141,7 @@ for (const [grade, subjects] of Object.entries(window.STUDYSENSE_SYLLABUS)) {
       } else {
         entry.book += " · part mapping not verified";
       }
-    } else if (["7", "8"].includes(grade) && verifiedVolumeChapters[grade]?.[subject]) {
+    } else if (["7", "8", "9"].includes(grade) && verifiedVolumeChapters[grade]?.[subject]) {
       if (!splitVerifiedVolumes(grade, subject)) {
         subjects[subject].book += " · part mapping not verified; combined list retained";
       }
@@ -141,12 +157,18 @@ for (const [grade, subjects] of Object.entries(window.STUDYSENSE_SYLLABUS)) {
   if (!subjects.English) {
     const englishBooks = {
       "6": "Poorvi (Class 6)",
-      "9": "NCERT Grade 9 English · 2026–27 language syllabus",
+      "9": "Kaveri · NCERT Grade 9 English (2026–27)",
       "10": "First Flight and Footprints Without Feet (existing set)"
     };
     subjects.English = {
       book: englishBooks[grade] || "English textbook · confirm the school's NCERT edition",
-      chapters: grade === "10" ? [
+      chapters: grade === "9" ? [
+        "How I Taught My Grandmother to Read", "The Pot Maker", "Winds of Change", "Vitamin-M",
+        "The World of Limitless Possibilities", "Twin Melodies", "Carrier of Words", "Follow That Dream",
+        "Bharat Our Land", "Gifts of Grace: Honouring Our Vocations", "Canvas of Soil",
+        "I Cannot Remember My Mother", "Nine Gold Medals", "A Friend Found in Music",
+        "Words", "Believe in Yourself"
+      ] : grade === "10" ? [
         "A Letter to God", "Nelson Mandela: Long Walk to Freedom",
         "Two Stories about Flying", "From the Diary of Anne Frank",
         "The Hundred Dresses I", "The Hundred Dresses II",
@@ -156,19 +178,23 @@ for (const [grade, subjects] of Object.entries(window.STUDYSENSE_SYLLABUS)) {
         "Footprints Without Feet", "The Making of a Scientist", "The Necklace",
         "Bholi", "The Book That Saved the Earth"
       ] : [],
-      sourceNote: grade === "10" ? "Confirm your prescribed English course and the current reduced syllabus with your school." : "Chapter list is not populated because the exact prescribed book/course has not been verified."
+      sourceNote: grade === "9" ? "Kaveri (2026–27): includes the eight prose chapters and eight poems listed in the CBSE/Delhi Education Department Class IX Language R1 annual syllabus. Confirm your school's language option and prescribed selection." : grade === "10" ? "Confirm your prescribed English course and the current reduced syllabus with your school." : "Chapter list is not populated because the exact prescribed book/course has not been verified."
     };
   }
   if (!subjects.Hindi) {
     const hindiBooks = {
       "6": "Malhar (Class 6)",
-      "9": "NCERT Grade 9 Hindi · 2026–27 language syllabus",
+      "9": "Ganga · NCERT Grade 9 Hindi (2026–27)",
       "10": "NCERT Hindi · existing set; course depends on school"
     };
     subjects.Hindi = {
       book: hindiBooks[grade] || "Hindi textbook · confirm the school's NCERT edition",
-      chapters: [],
-      sourceNote: "Chapter list is not populated because the prescribed course/book can vary by school."
+      chapters: grade === "9" ? [
+        "दो बैलों की कथा", "क्या लिखूँ?", "संवादहीन", "ऐसी भी बातें होती हैं",
+        "आखिरी चट्टान तक", "रीढ़ की हड्डी", "मैं और मेरा देश", "पद",
+        "राम-लक्ष्मण-परशुराम संवाद", "भारति, जय, विजयकरे !", "झाँसी की रानी", "घर की याद"
+      ] : [],
+      sourceNote: grade === "9" ? "Ganga (2026–27): 12 chapter titles from the NCERT/ePathshala Grade IX catalogue. Confirm that Ganga is the Hindi course prescribed by your school." : "Chapter list is not populated because the prescribed course/book can vary by school."
     };
   }
 }

@@ -76,16 +76,44 @@ test("Single-volume Grade 6 Social Science is not falsely split", () => {
   assert.equal(catalog["6"]["Social Science"].chapters.length, 14);
 });
 
-test("Unverified Grade 9 Mathematics does not expose outdated chapter imports", () => {
-  assert.ok(catalog["9"]["Mathematics"]);
-  assert.ok(!catalog["9"]["Mathematics — Part I"]);
-  assert.equal(catalog["9"]["Mathematics"].chapters.length, 0);
-  assert.match(catalog["9"]["Mathematics"].book, /exact part and chapter list not verified/i);
-  assert.match(catalog["9"]["Mathematics"].sourceNote, /import is disabled/i);
+test("Class 9 Mathematics maps the 2026–27 Ganita Manjari chapters into both parts", () => {
+  const p1 = part("9", "Mathematics", "Part I");
+  const p2 = part("9", "Mathematics", "Part II");
+  assert.equal(p1.chapters.length, 8);
+  assert.equal(p2.chapters.length, 6);
+  assert.equal(p1.book, "Ganita Manjari · Part I");
+  assert.equal(p2.book, "Ganita Manjari · Part II");
+  assertDisjoint(p1, p2);
+  assert.equal(p1.chapters[0], "Orienting Yourself: The Use of Coordinates");
+  assert.equal(p1.chapters[2], "The World of Numbers");
+  assert.equal(p2.chapters[0], "Propositions and their Converses");
+  assert.equal(p2.chapters[5], "Math of Space: Surface Area and Volume");
 });
 
-test("Unverified language catalogues do not fabricate chapter titles", () => {
-  for (const grade of ["6", "7", "8", "9"]) {
+test("Class 9 English uses the current Kaveri prose and poetry list", () => {
+  const english = catalog["9"].English;
+  assert.match(english.book, /Kaveri/);
+  assert.equal(english.chapters.length, 16);
+  assert.ok(english.chapters.includes("How I Taught My Grandmother to Read"));
+  assert.ok(english.chapters.includes("Follow That Dream"));
+  assert.ok(english.chapters.includes("Bharat Our Land"));
+  assert.ok(english.chapters.includes("Believe in Yourself"));
+  assert.match(english.sourceNote, /2026–27/);
+});
+
+test("Class 9 Hindi uses the current Ganga chapter list", () => {
+  const hindi = catalog["9"].Hindi;
+  assert.match(hindi.book, /Ganga/);
+  assert.equal(hindi.chapters.length, 12);
+  assert.ok(hindi.chapters.includes("दो बैलों की कथा"));
+  assert.ok(hindi.chapters.includes("रीढ़ की हड्डी"));
+  assert.ok(hindi.chapters.includes("राम-लक्ष्मण-परशुराम संवाद"));
+  assert.ok(hindi.chapters.includes("घर की याद"));
+  assert.match(hindi.sourceNote, /2026–27/);
+});
+
+test("Language catalogues for other grades do not fabricate chapter titles", () => {
+  for (const grade of ["6", "7", "8"]) {
     assert.equal(catalog[grade].English.chapters.length, 0);
     assert.equal(catalog[grade].Hindi.chapters.length, 0);
     assert.ok(catalog[grade].English.sourceNote);
