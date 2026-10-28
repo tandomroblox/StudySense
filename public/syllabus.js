@@ -30,3 +30,54 @@ window.STUDYSENSE_SYLLABUS = {
     "Social Science": { book: "NCERT Social Science (existing textbook set)", chapters: ["The Rise of Nationalism in Europe","Nationalism in India","The Making of a Global World","The Age of Industrialisation","Print Culture and the Modern World","Resources and Development","Forest and Wildlife Resources","Water Resources","Agriculture","Minerals and Energy Resources","Manufacturing Industries","Lifelines of National Economy","Power Sharing","Federalism","Gender, Religion and Caste","Political Parties","Outcomes of Democracy","Development","Sectors of the Indian Economy","Money and Credit","Globalisation and the Indian Economy","Consumer Rights"] }
   }
 };
+
+// Present Part I and Part II separately in the tracker, and expose language subjects.
+// For subjects whose exact edition-specific contents are not verified, keep the
+// subject selectable but do not fabricate chapter names.
+for (const [grade, subjects] of Object.entries(window.STUDYSENSE_SYLLABUS)) {
+  for (const subject of ["Mathematics", "Social Science"]) {
+    const entry = subjects[subject];
+    if (!entry || !Array.isArray(entry.chapters)) continue;
+    delete subjects[subject];
+    const midpoint = Math.ceil(entry.chapters.length / 2);
+    subjects[subject + " — Part I"] = {
+      book: entry.book + " · Part I",
+      chapters: entry.chapters.slice(0, midpoint)
+    };
+    subjects[subject + " — Part II"] = {
+      book: entry.book + " · Part II",
+      chapters: entry.chapters.slice(midpoint)
+    };
+  }
+  if (!subjects.English) {
+    const englishBooks = {
+      "6": "Poorvi (Class 6)",
+      "9": "NCERT Grade 9 English · 2026–27 language syllabus",
+      "10": "First Flight and Footprints Without Feet (existing set)"
+    };
+    subjects.English = {
+      book: englishBooks[grade] || "English textbook · confirm the school's NCERT edition",
+      chapters: grade === "10" ? [
+        "A Letter to God", "Nelson Mandela: Long Walk to Freedom",
+        "Two Stories about Flying", "From the Diary of Anne Frank",
+        "The Hundred Dresses I", "The Hundred Dresses II",
+        "Glimpses of India", "Mijbil the Otter", "Madam Rides the Bus",
+        "The Sermon at Benares", "The Proposal", "A Triumph of Surgery",
+        "The Thief's Story", "The Midnight Visitor", "A Question of Trust",
+        "Footprints Without Feet", "The Making of a Scientist", "The Necklace",
+        "Bholi", "The Book That Saved the Earth"
+      ] : []
+    };
+  }
+  if (!subjects.Hindi) {
+    const hindiBooks = {
+      "6": "Malhar (Class 6)",
+      "9": "NCERT Grade 9 Hindi · 2026–27 language syllabus",
+      "10": "NCERT Hindi · existing set; course depends on school"
+    };
+    subjects.Hindi = {
+      book: hindiBooks[grade] || "Hindi textbook · confirm the school's NCERT edition",
+      chapters: []
+    };
+  }
+}
