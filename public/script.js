@@ -29,8 +29,8 @@ const curriculumSources = {
     ]
   },
   "9": {
-    title: "Class 9 · New 2026–27 curriculum",
-    note: "NCERT's new Grade 9 books are aligned to NCF-SE 2023. The official syllabus documents are organised into Languages (Part 1), Science/Mathematics/Social Science (Part 2), and vocational/arts/physical education/Individuals in Society (Part 3). Check the official book portal for the latest released editions.",
+    title: "Class 9 · 2026–27",
+    note: "The 2026–27 Grade 9 catalogue follows NCF-SE 2023. The official syllabus documents are organised into Languages (Part 1), Science/Mathematics/Social Science (Part 2), and vocational/arts/physical education/Individuals in Society (Part 3). Confirm your school’s prescribed subjects and language options.",
     links: [
       ["NCERT Grade 9 syllabus · Languages (Part 1)", "https://www.ncert.nic.in/pdf/announcement/Syllabus_Secondary_Stage_Phase_I_Grade_9_Part_1_Languages.pdf"],
       ["NCERT Grade 9 syllabus · Science, Mathematics & Social Science (Part 2)", "https://www.ncert.nic.in/pdf/announcement/Syllabus_Secondary_Stage_Phase_I_Grade_9_Part_2.pdf"],
@@ -40,8 +40,8 @@ const curriculumSources = {
     ]
   },
   "10": {
-    title: "Class 10 · 2026–27 existing textbooks",
-    note: "For 2026–27, NCERT's existing Class 10 textbooks continue; the new textbook rollout for Class 10 is scheduled for a later academic session. Use the current CBSE Class X curriculum page for the prescribed subject syllabus and exam requirements.",
+    title: "Class 10 · 2026–27",
+    note: "Use the prescribed Class 10 textbook and the current CBSE Class X curriculum for the 2026–27 academic year. Confirm the subject syllabus and exam requirements with your school.",
     links: [
       ["NCERT e-textbooks (Classes 1–12)", "https://ncert.nic.in/textbook.php"],
       ["CBSE 2026–27 curriculum · Class X", "https://cbseacademic.nic.in/curriculum_2027.html"],
