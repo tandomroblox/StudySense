@@ -1,0 +1,27 @@
+name: StudySense quality
+on:
+  push:
+    branches: [main, "feat/**"]
+  pull_request:
+    branches: [main]
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check JavaScript syntax
+        run: |
+          node --check public/script.js
+          node --check public/syllabus.js
+          node --check public/sw.js
+          node --check public/study-tools.js
+          node --check browser-extension/background.js
+          node --check browser-extension/popup.js
+          node --input-type=module --check < src/index.js
+      - name: Check project configuration and assets
+        run: node scripts/check-quality.mjs
+      - name: Test syllabus volume accuracy and extension accounting
+        run: node --test tests/*.test.mjs
