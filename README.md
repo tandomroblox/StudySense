@@ -1,17 +1,29 @@
 # StudySense
 
-StudySense is a student-first study dashboard for exam planning, chapter tracking, active recall, practice history, revision scheduling, AI study support, and a personal study library. The current platform is a Cloudflare Worker with static assets in `public/`, a D1 database, and an optional Chromium extension for local browser-time tracking.
+StudySense is a student-first study website for exam planning, chapter tracking, active recall, practice history, revision scheduling, AI study support, and a personal study library. It is organized into separate, linked pages that share one account and data model. The current platform is a Cloudflare Worker with static assets in `public/`, a D1 database, and an optional Chromium extension for local browser-time tracking.
+
+## Website pages
+
+- **Overview** (`/`): at-a-glance task completion, readiness, and suggested next steps.
+- **Planner** (`/planner.html`): tasks, daily plan, focus timer, and entertainment allowance.
+- **Exams** (`/exams.html`): upcoming exams and readiness.
+- **Syllabus** (`/syllabus.html`): chapter catalogue/import, chapter status, and official curriculum sources.
+- **Learn** (`/learn.html`): smart revision, AI practice, tutor, flashcards, and practice history.
+- **Library** (`/library.html`): private notes, formulas, definitions, and doubts.
+- **Profile & settings** (`/profile.html`): profile and study preferences, accessible from the top-right account menu.
+
+The routes use `app-shell.html` and `app-shell.js` to mount one shared set of page elements, so navigation and account data stay consistent without duplicating the large HTML form tree. The view for each route displays only its own tools. The mobile navigation collapses into a horizontally scrollable row.
 
 ## Web features
 
 - Tasks, exams, per-exam chapters, and chapter progress.
-- Curriculum catalogues for Classes 6–10. Exact editions and volume membership are kept explicit; unverified language lists are left empty rather than filled with guessed chapter titles.
+- Curriculum catalogues for Classes 6–10. Exact editions and volume membership are kept explicit; where a school may prescribe different language options, the page includes a note to confirm the booklist.
 - Smart revision scheduling based on a student's review rating.
 - AI practice questions (MCQ, short-answer, numerical, or mixed) with optional student-provided lesson text.
 - Readiness estimates that combine chapter status with recently recorded practice accuracy when it is available. This is a planning indicator, not an exam-mark prediction.
 - A private study library for notes, formulas, definitions, and doubts organized by class, subject, textbook, part, and chapter.
 - Focus timer, flashcards, practice logs, and a voluntary local CSV progress summary.
-- Offline shell caching. API responses and account data are deliberately excluded from the service-worker cache.
+- Offline shell caching for all seven routes and their shared layout. API responses and account data are deliberately excluded from the service-worker cache.
 
 Generated AI practice is original practice material, not a claim of official NCERT/CBSE questions. When textbook-specific accuracy matters, add the relevant lesson excerpt and verify generated material against the prescribed book and teacher's syllabus.
 

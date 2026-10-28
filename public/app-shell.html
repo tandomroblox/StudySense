@@ -1,0 +1,125 @@
+<header class="topbar">
+    <a class="brand" href="/index.html" aria-label="StudySense dashboard"><img class="brand-icon" src="/icon.svg" alt="" width="30" height="30"><span class="brand-name">Study<span>Sense</span></span></a>
+    <nav class="site-nav" aria-label="Main navigation">
+      <a href="/index.html" data-nav="dashboard">Overview</a>
+      <a href="/planner.html" data-nav="planner">Planner</a>
+      <a href="/exams.html" data-nav="exams">Exams</a>
+      <a href="/syllabus.html" data-nav="syllabus">Syllabus</a>
+      <a href="/learn.html" data-nav="learn">Learn</a>
+      <a href="/library.html" data-nav="library">Library</a>
+    </nav>
+    <div class="account-menu" id="accountMenu">
+      <button id="accountMenuButton" class="account-trigger" type="button" aria-expanded="false" aria-controls="accountMenuPanel"><span class="account-avatar" aria-hidden="true">●</span><span>Account</span><span aria-hidden="true">⌄</span></button>
+      <div id="accountMenuPanel" class="account-dropdown" hidden>
+        <span id="signedInAs" class="account-email"></span>
+        <a href="/profile.html" data-nav="profile">Profile &amp; settings</a>
+        <button id="connectGoogleButton" class="dropdown-action" type="button">Connect Google</button>
+        <button id="installAppButton" class="dropdown-action" type="button" hidden>Install app</button>
+        <button id="logoutButton" class="dropdown-action danger-action" type="button">Sign out</button>
+      </div>
+    </div>
+    <span id="connectionStatus" class="status" role="status" aria-live="polite">YOUR STUDY SPACE</span>
+  </header>
+  <main class="container">
+    <section class="welcome">
+      <p class="eyebrow">YOUR PERSONAL STUDY DASHBOARD</p>
+      <h1>Make today <span>count.</span></h1>
+      <p class="muted">Small steps today. Better preparation tomorrow.</p>
+    </section>
+
+    <section id="authPanel" class="card auth-panel">
+      <p class="eyebrow">YOUR ACCOUNT</p>
+      <h2 id="authHeading">Welcome to StudySense</h2>
+      <p class="muted">Sign in to keep your study tasks saved to your account.</p>
+      <div class="auth-tabs" role="group" aria-label="Account action">
+        <button type="button" id="showLogin" class="tab active">Sign in</button>
+        <button type="button" id="showRegister" class="tab">Create account</button>
+      </div>
+      <button id="googleSignIn" class="google-button" type="button"><span aria-hidden="true">G</span> Continue with Google</button>
+      <div class="auth-divider"><span>or use email</span></div>
+      <form id="authForm">
+        <label for="emailInput">Email</label>
+        <input id="emailInput" type="email" autocomplete="email" maxlength="254" required placeholder="you@example.com">
+        <label for="passwordInput">Password</label>
+        <input id="passwordInput" type="password" autocomplete="current-password" minlength="10" maxlength="128" required placeholder="At least 10 characters">
+        <button id="authSubmit" class="primary-button" type="submit">Sign in</button>
+      </form>
+      <p id="authMessage" class="message" role="status" aria-live="polite"></p>
+      <p class="fine-print">Your email and Google sign-in can use the same StudySense account. Existing accounts must be linked from inside your signed-in session.</p>
+    </section>
+
+    <section id="appPanel" hidden>
+      <section id="examCenterSection" class="card exam-center"><div class="section-heading"><div><p class="eyebrow">PLAN AHEAD</p><h2>Exam command centre</h2></div><span id="examCount" class="pill">0 exams</span></div><section class="stats exam-stats"><article class="card"><p class="muted">Upcoming exams</p><h2 id="upcomingExams">0</h2></article><article class="card"><p class="muted">Syllabus mastered</p><h2 id="syllabusCoverage">0%</h2></article><article class="card"><p class="muted">Readiness score</p><h2 id="readinessScore">0%</h2></article></section><form id="examForm"><label for="examName">Exam name</label><input id="examName" required maxlength="100" placeholder="e.g. Science final"><label for="examDate">Exam date</label><input id="examDate" type="date" required><button type="submit">Add exam</button></form><p id="examMessage" class="message"></p><div id="examList"></div></section>
+      <section id="syllabusTrackerSection" class="card syllabus-panel"><div class="section-heading"><div><p class="eyebrow">CURRICULUM PROGRESS</p><h2>Syllabus tracker</h2></div></div>
+        <div class="syllabus-import card">
+          <p class="eyebrow">OFFICIAL CHAPTER CATALOGUE</p>
+          <h3>Load chapters by class</h3>
+          <p class="muted">Choose the class and subject, then add the chapter list to an exam. Existing progress is kept; already-added chapters are skipped.</p>
+          <div class="form-row">
+            <div class="field"><label for="syllabusClass">Class</label><select id="syllabusClass"><option value="6">Class 6 · 2026–27</option><option value="7">Class 7 · 2026–27</option><option value="8">Class 8 · 2026–27</option><option value="9">Class 9 · New 2026–27 books</option><option value="10">Class 10 · Existing books</option></select></div>
+            <div class="field"><label for="syllabusSubject">Subject</label><select id="syllabusSubject"></select></div>
+          </div>
+          <p id="syllabusBookNote" class="chapter-meta"></p>
+          <button id="importSyllabusButton" type="button">Add chapter list to selected exam</button>
+          <p id="syllabusImportMessage" class="message" role="status" aria-live="polite"></p>
+        </div>
+        <form id="chapterForm"><label for="chapterExam">Exam</label><select id="chapterExam" required></select><label for="chapterSubject">Subject</label><select id="chapterSubject"><option>Mathematics</option><option>Mathematics — Part I</option><option>Mathematics — Part II</option><option>Science</option><option>Social Science</option><option>Social Science — Part I</option><option>Social Science — Part II</option><option>English</option><option>Hindi</option><option>Telugu</option><option>IT-402</option><option>Skill Education</option><option>Vocational Education</option></select><label for="chapterName">Chapter</label><input id="chapterName" required maxlength="150"><button type="submit">Add chapter</button></form><p id="chapterMessage" class="message"></p><div id="chapterList"></div></section>
+      <section id="examStudyPlanSection" class="card study-plan-panel"><div class="section-heading"><div><p class="eyebrow">NEXT STEPS</p><h2>Suggested study plan</h2></div></div><div id="studyPlan"></div></section>
+      <section id="curriculumLibrarySection" class="card curriculum-library">
+        <div class="section-heading">
+          <div><p class="eyebrow">OFFICIAL NCERT SOURCES</p><h2>Curriculum library</h2></div>
+          <span class="pill">2026–27</span>
+        </div>
+        <p class="muted">Choose your class to open the official textbook and syllabus sources. StudySense links to NCERT/CBSE originals instead of hosting copied textbook PDFs, so updates and corrections come from the publisher.</p>
+        <label for="curriculumGrade">Class</label>
+        <select id="curriculumGrade">
+          <option value="6">Class 6 · New NCERT books</option>
+          <option value="7">Class 7 · New NCERT books</option>
+          <option value="8">Class 8 · New NCERT books</option>
+          <option value="9">Class 9 · New curriculum</option>
+          <option value="10">Class 10 · Existing books for 2026–27</option>
+        </select>
+        <div id="curriculumDetails" class="curriculum-details" aria-live="polite">
+          <p class="empty">Loading official curriculum sources…</p>
+        </div>
+        <p class="fine-print">Class 9 follows the new NCF-SE 2023 curriculum for 2026–27. Class 10 continues with the existing textbooks for 2026–27; the new Class 10 books are scheduled for a later session. Confirm the subjects/language options selected by your school.</p>
+      </section>
+      <section id="profileSection" class="card profile-card"><div class="section-heading"><div><p class="eyebrow">YOUR SETTINGS</p><h2>Profile</h2></div><span class="pill">Account</span></div>
+        <p class="muted">Set your class and study preferences once. Your profile is saved to your StudySense account.</p>
+        <form id="profileForm"><label for="profileName">Display name (optional)</label><input id="profileName" maxlength="60" autocomplete="nickname" placeholder="What should StudySense call you?"><label for="profileGrade">Class</label><select id="profileGrade" required><option value="6">Class 6</option><option value="7">Class 7</option><option value="8">Class 8</option><option value="9">Class 9</option><option value="10">Class 10</option></select><label for="profileSchool">School (optional)</label><input id="profileSchool" maxlength="120" autocomplete="organization" placeholder="School name"><label for="profileGoal">Daily study goal</label><select id="profileGoal"><option value="30">30 minutes</option><option value="45">45 minutes</option><option value="60">1 hour</option><option value="90">1.5 hours</option><option value="120">2 hours</option><option value="180">3 hours</option></select><button type="submit">Save profile</button></form><p id="profileMessage" class="message" role="status" aria-live="polite"></p></section>
+      <section id="tutorSection" class="card tutor-card"><div class="section-heading"><div><p class="eyebrow">CURRICULUM-FOCUSED HELP</p><h2>AI study tutor</h2></div><span class="pill">Preview</span></div><p class="muted">Ask a study question for a step-by-step explanation. The tutor is instructed to admit uncertainty instead of guessing. Until lesson material is uploaded, answers are not guaranteed to match your exact textbook.</p><form id="tutorForm"><label for="tutorSubject">Subject</label><select id="tutorSubject"><option>Mathematics</option><option>Science</option><option>Social Science</option><option>English</option><option>Hindi</option><option>Telugu</option></select><label for="tutorChapter">Lesson / chapter (optional)</label><input id="tutorChapter" maxlength="150" placeholder="e.g. Linear equations"><label for="tutorContext">Lesson excerpt or your notes (optional)</label><textarea id="tutorContext" maxlength="6000" rows="3" placeholder="Paste the relevant lesson text or your own notes to ground the explanation…"></textarea><label for="tutorQuestion">What are you stuck on?</label><textarea id="tutorQuestion" maxlength="2000" rows="4" required placeholder="Ask a doubt or request a practice question…"></textarea><button id="tutorSubmit" type="submit">Ask the tutor</button></form><p id="tutorMessage" class="message" role="status" aria-live="polite"></p><article id="tutorAnswer" class="tutor-answer" hidden aria-live="polite"></article></section>
+      <section id="screenTimeSection" class="card screen-time-card"><div class="section-heading"><div><p class="eyebrow">BALANCED BREAKS</p><h2>Entertainment allowance</h2></div><span id="screenTimeStatus" class="pill">Ready</span></div><p class="muted">Track an entertainment session: 15 minutes allowed, followed by a 35-minute cooldown. This browser-based version cannot monitor or block other apps or websites; that needs a dedicated Android app or browser extension.</p><div class="screen-time-clock" id="screenTimeClock" role="timer" aria-live="off">15:00</div><div class="focus-controls"><button id="screenTimeStart" type="button">Start entertainment</button><button id="screenTimeReset" class="secondary-button" type="button">Reset timer</button></div><p id="screenTimeNote" class="focus-note">The 35-minute cooldown begins when the session expires.</p><p class="fine-print">Time is tracked on this device only. This is a self-management aid, not parental control.</p></section>
+      <section id="dashboardStats" class="stats">
+        <article class="card"><p class="muted">Total tasks</p><h2 id="totalTasks">0</h2></article>
+        <article class="card"><p class="muted">Completed</p><h2 id="completedTasks">0</h2></article>
+        <article class="card"><p class="muted">Completion</p><h2 id="completionRate">0%</h2></article>
+      </section>
+      <section id="flashcardsSection" class="card learning-tools"><div class="section-heading"><div><p class="eyebrow">ACTIVE RECALL</p><h2>Flashcards</h2></div><span id="dueFlashcards" class="pill">0 due</span></div><form id="flashcardForm"><label for="flashSubject">Subject</label><input id="flashSubject" maxlength="80" required placeholder="e.g. Biology"><label for="flashPrompt">Question</label><input id="flashPrompt" maxlength="500" required placeholder="What do you want to remember?"><label for="flashAnswer">Answer</label><textarea id="flashAnswer" maxlength="2000" required placeholder="Write the answer" rows="3"></textarea><button type="submit">Add flashcard</button></form><p id="flashMessage" class="message"></p><div id="flashcardList" class="learning-list"></div></section>
+      <section id="practiceLogSection" class="card learning-tools"><div class="section-heading"><div><p class="eyebrow">PRACTICE LOG</p><h2>Track practice</h2></div><span id="practiceAccuracy" class="pill">— accuracy</span></div><form id="practiceForm"><label for="practiceSubject">Subject</label><input id="practiceSubject" maxlength="80" required placeholder="e.g. Mathematics"><label for="practiceTopic">Topic / exercise</label><input id="practiceTopic" maxlength="200" required placeholder="e.g. Linear equations"><div class="form-row"><div class="field"><label for="practiceQuestions">Questions attempted</label><input id="practiceQuestions" type="number" min="1" max="10000" required></div><div class="field"><label for="practiceCorrect">Correct answers</label><input id="practiceCorrect" type="number" min="0" max="10000" required></div></div><label for="practiceNotes">Notes (optional)</label><input id="practiceNotes" maxlength="500" placeholder="What should you revisit?"><button type="submit">Save practice</button></form><p id="practiceMessage" class="message"></p><div id="practiceList" class="learning-list"></div></section>
+      <section id="focusTimerSection" class="card focus-tools"><div class="section-heading"><div><p class="eyebrow">DEEP WORK</p><h2>Focus timer</h2></div><span id="focusSessions" class="pill">0 sessions</span></div><p class="muted">One task at a time. Take a short break when the timer ends.</p><div id="focusClock" class="focus-clock" role="timer" aria-live="off">25:00</div><div class="focus-controls"><button id="focusStart" type="button">Start focus</button><button id="focusPause" class="secondary-button" type="button">Pause</button><button id="focusReset" class="secondary-button" type="button">Reset</button></div><p id="focusNote" class="focus-note">25-minute focus session</p></section>
+      <section id="plannerSection" class="card planner">
+        <div class="section-heading">
+          <div><p class="eyebrow">STAY ON TRACK</p><h2>Study planner</h2></div>
+          <span id="taskCount" class="pill">0 tasks</span>
+        </div>
+        <form id="taskForm">
+          <label for="taskInput">What do you need to study?</label>
+          <input id="taskInput" type="text" maxlength="200" placeholder="e.g. Complete maths homework" required>
+          <div class="form-row">
+            <div class="field">
+              <label for="subjectInput">Subject</label>
+              <select id="subjectInput">
+                <option>Mathematics</option><option>Science</option><option>Social Science</option>
+                <option>English</option><option>Hindi</option><option>Telugu</option>
+                <option>IT-402</option><option>Skill Education</option><option>Vocational Education</option>
+              </select>
+            </div>
+            <button type="submit">+ Add task</button>
+          </div>
+        </form>
+        <p id="taskMessage" class="message" role="status" aria-live="polite"></p>
+        <div class="task-toolbar"><label for="taskFilter">Show</label><select id="taskFilter" aria-label="Filter tasks"><option value="all">All tasks</option><option value="active">Not completed</option><option value="completed">Completed</option></select><span id="visibleTaskCount" class="muted" aria-live="polite"></span></div><div id="taskList" class="task-list"><p class="empty">Loading your tasks…</p></div>
+      </section>
+    </section>
+    <footer>StudySense · Built for better study habits.</footer>
+  </main>

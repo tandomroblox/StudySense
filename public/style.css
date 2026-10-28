@@ -196,3 +196,144 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .syllabus-import button:disabled { opacity: .5; cursor: not-allowed; }
 
 .profile-card,.tutor-card,.screen-time-card{margin:0 0 18px}.profile-card form,.tutor-card form{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;align-items:start}.profile-card form label,.tutor-card form label{margin:8px 0 0}.profile-card input,.profile-card select,.tutor-card input,.tutor-card select,.tutor-card textarea{width:100%;min-width:0;padding:12px;border:1px solid #303b59;border-radius:9px;background:#0e1528;color:white;font:inherit}.profile-card form button,.tutor-card form button{justify-self:start;margin-top:10px}.tutor-answer{margin-top:16px;padding:16px;border:1px solid #8ea8ff44;border-radius:12px;background:#8ea8ff0b;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere}.screen-time-clock{font-size:clamp(2.8rem,10vw,4.5rem);font-weight:750;letter-spacing:.04em;text-align:center;font-variant-numeric:tabular-nums;padding:20px 0}.screen-time-card .focus-controls{justify-content:center;flex-wrap:wrap}.screen-time-card .focus-note{text-align:center;line-height:1.6}@media(max-width:560px){.profile-card form button,.tutor-card form button{width:100%;justify-self:stretch}.screen-time-card .focus-controls button{flex:1}}
+
+
+
+/* Multi-page navigation and account menu */
+.topbar {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0,1fr) auto auto;
+  align-items: center;
+  gap: 18px;
+  padding: 16px clamp(16px,4vw,56px);
+  background: #0b1020eF;
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid #ffffff15;
+}
+.brand { min-width: max-content; font-size: 22px; }
+.site-nav { display:flex; justify-content:center; align-items:center; gap:4px; min-width:0; }
+.site-nav a {
+  display:inline-flex; align-items:center; justify-content:center;
+  padding:10px 11px; border:1px solid transparent; border-radius:10px;
+  color:#aeb8d4; font-size:13px; font-weight:700; text-decoration:none;
+  white-space:nowrap; transition:background .15s ease,color .15s ease,border-color .15s ease;
+}
+.site-nav a:hover,.site-nav a:focus-visible { color:#f4f6ff; background:#ffffff08; outline:2px solid #a3afff66; outline-offset:1px; }
+.site-nav a.active { color:#e5e9ff; background:#8b9cff19; border-color:#8b9cff35; }
+.account-menu { position:relative; display:flex; justify-content:flex-end; }
+.account-trigger { display:flex; align-items:center; gap:8px; padding:10px 12px; background:#202a43; color:#e5e9ff; border:1px solid #ffffff17; }
+.account-trigger:hover { background:#293654; }
+.account-avatar { display:inline-grid; place-items:center; width:25px; height:25px; border-radius:50%; background:#8b9cff; color:#101629; font-size:12px; }
+.account-dropdown {
+  position:absolute; z-index:30; top:calc(100% + 10px); right:0; width:min(270px,calc(100vw - 32px));
+  padding:9px; border:1px solid #ffffff20; border-radius:14px; background:#151d32;
+  box-shadow:0 18px 55px #0008;
+}
+.account-dropdown[hidden] { display:none !important; }
+.account-email { display:block; padding:10px 11px 12px; border-bottom:1px solid #ffffff12; color:#919dbb; font-size:12px; overflow-wrap:anywhere; }
+.account-dropdown a,.dropdown-action {
+  display:flex; align-items:center; width:100%; gap:8px; padding:11px; margin-top:4px;
+  border-radius:9px; border:0; background:transparent; color:#e5e9ff; font-size:13px;
+  font-weight:650; text-align:left; text-decoration:none; white-space:normal;
+}
+.account-dropdown a:hover,.dropdown-action:hover { background:#ffffff0c; }
+.account-dropdown .danger-action { color:#ffc0ce; }
+.status { text-align:right; font-size:9px; letter-spacing:1.1px; white-space:nowrap; }
+.status.offline { color:#ffcf8a; }
+body:not(.is-signed-in) .site-nav,body:not(.is-signed-in) .account-menu { display:none !important; }
+.app-loading { width:min(640px,90%); margin:14vh auto; padding:24px; text-align:center; color:#a4aec8; border:1px solid #ffffff16; border-radius:16px; background:#151d32; }
+.welcome { padding:32px 0 20px; }
+.welcome h1 { line-height:1.08; max-width:800px; }
+.welcome > .muted { max-width:640px; line-height:1.6; }
+
+/* Every route reuses the same functional app shell but only renders its own workspace. */
+#appPanel:not([hidden]) { display:grid; grid-template-columns:minmax(0,1fr); gap:18px; align-content:start; }
+#appPanel > * { min-width:0; }
+#productivityHub { margin:0; }
+#productivityHub .productivity-panel { display:none; }
+#productivityHub .productivity-grid { grid-template-columns:repeat(2,minmax(0,1fr)); align-items:start; }
+#examCenterSection,#syllabusTrackerSection,#examStudyPlanSection,#curriculumLibrarySection,
+#profileSection,#tutorSection,#screenTimeSection,#focusTimerSection,#plannerSection,
+#flashcardsSection,#practiceLogSection,#dashboardStats { margin:0; min-width:0; }
+#syllabusTrackerSection,#examStudyPlanSection { width:100%; }
+#examCenterSection > h2,#syllabusTrackerSection > h2 { margin-top:18px; }
+body[data-page="dashboard"] #appPanel > :not(#dashboardStats):not(#productivityHub) { display:none !important; }
+body[data-page="dashboard"] #dashboardStats { display:grid !important; order:1; }
+body[data-page="dashboard"] #appPanel > #productivityHub { display:block !important; order:2; }
+body[data-page="dashboard"] #hubReadinessPanel,body[data-page="dashboard"] #hubDailyPlanPanel { display:block !important; }
+
+body[data-page="planner"] #appPanel > :not(#plannerSection):not(#focusTimerSection):not(#screenTimeSection):not(#productivityHub) { display:none !important; }
+body[data-page="planner"] #appPanel > #productivityHub { display:block !important; order:1; }
+body[data-page="planner"] #hubDailyPlanPanel { display:block !important; }
+body[data-page="planner"] #plannerSection { display:block !important; order:2; }
+body[data-page="planner"] #focusTimerSection { display:block !important; order:3; }
+body[data-page="planner"] #screenTimeSection { display:block !important; order:4; }
+body[data-page="planner"] #productivityHub .productivity-grid { grid-template-columns:minmax(0,1fr); }
+
+body[data-page="exams"] #appPanel > :not(#examCenterSection):not(#productivityHub) { display:none !important; }
+body[data-page="exams"] #examCenterSection { display:block !important; order:1; }
+body[data-page="exams"] #appPanel > #productivityHub { display:block !important; order:2; }
+body[data-page="exams"] #hubReadinessPanel { display:block !important; }
+body[data-page="exams"] #productivityHub .productivity-grid { grid-template-columns:minmax(0,1fr); }
+body[data-page="exams"] #examCenterSection > .exam-stats { display:grid; }
+
+body[data-page="syllabus"] #appPanel > :not(#syllabusTrackerSection):not(#examStudyPlanSection):not(#curriculumLibrarySection) { display:none !important; }
+body[data-page="syllabus"] #syllabusTrackerSection { display:block !important; order:1; }
+body[data-page="syllabus"] #examStudyPlanSection { display:block !important; order:2; }
+body[data-page="syllabus"] #curriculumLibrarySection { display:block !important; order:3; }
+
+body[data-page="learn"] #appPanel > :not(#tutorSection):not(#flashcardsSection):not(#practiceLogSection):not(#productivityHub) { display:none !important; }
+body[data-page="learn"] #appPanel > #productivityHub { display:block !important; order:1; }
+body[data-page="learn"] #hubRevisionPanel,body[data-page="learn"] #hubPracticePanel { display:block !important; }
+body[data-page="learn"] #tutorSection { display:block !important; order:2; }
+body[data-page="learn"] #flashcardsSection { display:block !important; order:3; }
+body[data-page="learn"] #practiceLogSection { display:block !important; order:4; }
+
+body[data-page="library"] #appPanel > :not(#productivityHub) { display:none !important; }
+body[data-page="library"] #appPanel > #productivityHub { display:block !important; }
+body[data-page="library"] #hubLibraryPanel { display:block !important; }
+body[data-page="library"] #productivityHub .productivity-grid { grid-template-columns:minmax(0,1fr); }
+body[data-page="library"] #hubLibraryPanel { max-width:850px; }
+
+body[data-page="profile"] #appPanel > :not(#profileSection) { display:none !important; }
+body[data-page="profile"] #profileSection { display:block !important; width:100%; max-width:780px; }
+body[data-page="profile"] #profileSection .section-heading h2 { margin-bottom:12px; }
+body[data-page="profile"] .welcome { padding-bottom:12px; }
+
+#examCenterSection .section-heading h2,#curriculumLibrarySection .section-heading h2,
+#tutorSection .section-heading h2,#profileSection .section-heading h2 { margin-bottom:14px; }
+#syllabusTrackerSection .section-heading h2,#examStudyPlanSection .section-heading h2 { margin-bottom:12px; }
+#appPanel .section-heading { align-items:flex-start; }
+#appPanel .message:empty { display:none; }
+#appPanel form { min-width:0; }
+#appPanel input,#appPanel textarea,#appPanel select { max-width:100%; }
+#appPanel .card { min-width:0; }
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible { outline:2px solid #a3afff; outline-offset:3px; }
+@media(max-width:1050px) {
+  .topbar { grid-template-columns:auto minmax(0,1fr) auto; gap:10px; padding-inline:22px; }
+  .topbar > .status { display:none; }
+  .site-nav a { padding:9px 8px; font-size:12px; }
+}
+@media(max-width:760px) {
+  .topbar { grid-template-columns:minmax(0,1fr) auto; gap:10px; padding:12px 4%; }
+  .brand { font-size:21px; }
+  .site-nav { grid-column:1 / -1; grid-row:2; justify-content:flex-start; overflow-x:auto; scrollbar-width:thin; padding:2px 0 5px; }
+  .site-nav a { flex:0 0 auto; padding:9px 11px; }
+  .account-trigger { padding:8px 10px; font-size:13px; }
+  .welcome { padding:24px 0 16px; }
+  #productivityHub .productivity-grid { grid-template-columns:minmax(0,1fr); }
+  #dashboardStats { grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+  #dashboardStats .card { padding:12px 9px; }
+  #dashboardStats h2 { font-size:22px; }
+}
+@media(max-width:420px) {
+  .container { width:92%; }
+  #dashboardStats { grid-template-columns:1fr; }
+  #dashboardStats .card { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  #dashboardStats h2 { margin:0; }
+  .account-trigger { gap:5px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  *,*::before,*::after { scroll-behavior:auto !important; transition:none !important; animation:none !important; }
+}

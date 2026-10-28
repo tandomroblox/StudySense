@@ -1,7 +1,9 @@
-const CACHE_NAME = "studysense-shell-v3";
+const CACHE_NAME = "studysense-shell-v4";
 const APP_SHELL = [
-  "/", "/index.html", "/style.css", "/script.js", "/syllabus.js",
-  "/study-tools.css", "/study-tools.js", "/manifest.webmanifest", "/icon.svg"
+  "/", "/index.html", "/planner.html", "/exams.html", "/syllabus.html",
+  "/learn.html", "/library.html", "/profile.html", "/app-shell.html", "/app-shell.js",
+  "/style.css", "/script.js", "/syllabus.js", "/study-tools.css", "/study-tools.js",
+  "/manifest.webmanifest", "/icon.svg"
 ];
 
 self.addEventListener("install", event => {
