@@ -252,46 +252,53 @@
     if (appPanel.hidden) return;
     if (refreshPromise) return refreshPromise;
     const generation = accountGeneration;
+    let retryForNewAccount = false;
     refreshPromise = (async () => {
-    const requests = await Promise.allSettled([
-      safeApi("/api/exams"), safeApi("/api/practice"), safeApi("/api/flashcards"),
-      safeApi("/api/tasks"), safeApi("/api/revisions"), safeApi("/api/library"), safeApi("/api/profile")
-    ]);
-    if (appPanel.hidden || generation !== accountGeneration) {
-      if (appPanel.hidden) cache = { exams: [], chapters: [], practice: [], flashcards: [], tasks: [], revisions: [], library: [], profile: null };
-      return;
-    }
-    const keys = ["exams","practice","flashcards","tasks","revisions","library","profile"];
-    const errors = [];
-    requests.forEach((result, index) => {
-      if (result.status === "fulfilled") {
-        const value = result.value;
-        if (keys[index] === "exams") { cache.exams = value.exams || []; cache.chapters = value.chapters || []; }
-        if (keys[index] === "practice") cache.practice = value.practice || [];
-        if (keys[index] === "flashcards") cache.flashcards = value.flashcards || [];
-        if (keys[index] === "tasks") cache.tasks = value.tasks || [];
-        if (keys[index] === "revisions") cache.revisions = value.reviews || [];
-        if (keys[index] === "library") cache.library = value.items || [];
-        if (keys[index] === "profile") cache.profile = value.profile || null;
-      } else {
-        errors.push(keys[index] + ": " + result.reason.message);
+      const requests = await Promise.allSettled([
+        safeApi("/api/exams"), safeApi("/api/practice"), safeApi("/api/flashcards"),
+        safeApi("/api/tasks"), safeApi("/api/revisions"), safeApi("/api/library"), safeApi("/api/profile")
+      ]);
+      if (appPanel.hidden) {
+        cache = { exams: [], chapters: [], practice: [], flashcards: [], tasks: [], revisions: [], library: [], profile: null };
+        return;
       }
-    });
-    if (cache.profile && Number(cache.profile.grade) >= 6 && Number(cache.profile.grade) <= 10) {
-      $("hubGrade").value = String(cache.profile.grade);
-      $("hubLibraryGrade").value = String(cache.profile.grade);
-    }
-    renderMetricsSummary();
-    $("hubReadinessMessage").textContent = errors.filter(e => e.startsWith("exams:")).join(" ");
-    const revisionError = errors.find(e => e.startsWith("revisions:"));
-    $("hubRevisionMessage").textContent = revisionError || "";
-    const libraryError = errors.find(e => e.startsWith("library:"));
-    $("hubLibraryMessage").textContent = libraryError || "";
+      if (generation !== accountGeneration) {
+        retryForNewAccount = true;
+        return;
+      }
+      const keys = ["exams","practice","flashcards","tasks","revisions","library","profile"];
+      const errors = [];
+      requests.forEach((result, index) => {
+        if (result.status === "fulfilled") {
+          const value = result.value;
+          if (keys[index] === "exams") { cache.exams = value.exams || []; cache.chapters = value.chapters || []; }
+          if (keys[index] === "practice") cache.practice = value.practice || [];
+          if (keys[index] === "flashcards") cache.flashcards = value.flashcards || [];
+          if (keys[index] === "tasks") cache.tasks = value.tasks || [];
+          if (keys[index] === "revisions") cache.revisions = value.reviews || [];
+          if (keys[index] === "library") cache.library = value.items || [];
+          if (keys[index] === "profile") cache.profile = value.profile || null;
+        } else {
+          errors.push(keys[index] + ": " + (result.reason?.message || "Could not load data."));
+        }
+      });
+      if (cache.profile && Number(cache.profile.grade) >= 6 && Number(cache.profile.grade) <= 10) {
+        $("hubGrade").value = String(cache.profile.grade);
+        $("hubLibraryGrade").value = String(cache.profile.grade);
+      }
+      renderMetricsSummary();
+      $("hubReadinessMessage").textContent = errors.filter(e => e.startsWith("exams:")).join(" ");
+      const revisionError = errors.find(e => e.startsWith("revisions:"));
+      $("hubRevisionMessage").textContent = revisionError || "";
+      const libraryError = errors.find(e => e.startsWith("library:"));
+      $("hubLibraryMessage").textContent = libraryError || "";
     })();
     try { return await refreshPromise; }
-    finally { refreshPromise = null; }
+    finally {
+      refreshPromise = null;
+      if (retryForNewAccount && !appPanel.hidden) refreshData().catch(() => {});
+    }
   }
-
   $("hubPracticeForm").addEventListener("submit", async event => {
     event.preventDefault();
     const button = $("hubGeneratePractice");
