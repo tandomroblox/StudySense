@@ -254,6 +254,10 @@
       safeApi("/api/exams"), safeApi("/api/practice"), safeApi("/api/flashcards"),
       safeApi("/api/tasks"), safeApi("/api/revisions"), safeApi("/api/library"), safeApi("/api/profile")
     ]);
+    if (appPanel.hidden) {
+      cache = { exams: [], chapters: [], practice: [], flashcards: [], tasks: [], revisions: [], library: [], profile: null };
+      return;
+    }
     const keys = ["exams","practice","flashcards","tasks","revisions","library","profile"];
     const errors = [];
     requests.forEach((result, index) => {
@@ -429,6 +433,9 @@
     refreshData().catch(error => {
       $("hubReadinessMessage").textContent = error.message || "Could not load study tools.";
     });
+  });
+  window.addEventListener("studysense:data-changed", () => {
+    if (!appPanel.hidden) refreshData().catch(() => {});
   });
   observer.observe(appPanel, { attributes: true, attributeFilter: ["hidden"] });
   if (!appPanel.hidden) refreshData().catch(() => {});
