@@ -70,7 +70,7 @@ Apply schema changes deliberately to the intended database after reviewing the m
 npx wrangler d1 migrations apply studysense-db --remote
 ```
 
-Do not apply migrations against production until the code and schema have been checked together. Migration `0006_revision_library.sql` adds only tables and indexes for revision scheduling and the study library. It does not delete or rewrite existing study records.
+Migration `0006_revision_library.sql` adds only tables and indexes for revision scheduling and the study library. It does not delete or rewrite existing study records. In the connected production D1 database for this deployment, the `user_profiles` table and the `0002`–`0006` migration records have been verified. For a different environment, inspect its current schema and migration history before applying pending migrations; do not blindly reapply production changes.
 
 This repository does not contain a configured Cloudflare deployment workflow with credentials. A passing GitHub check or a merged commit alone does **not** prove that a new Worker version or its static assets are live. Verify the Worker version, public HTTP response, sign-in, D1 operations, AI calls, and offline shell after a deployment.
 

@@ -132,7 +132,9 @@ for (const [grade, subjects] of Object.entries(window.STUDYSENSE_SYLLABUS)) {
     } else if (subjects[subject] && /Parts I[–-]II/i.test(subjects[subject].book)) {
       subjects[subject].book += " · combined list retained until the exact volume mapping is verified";
     } else if (grade === "9" && subject === "Mathematics" && subjects[subject]) {
-      subjects[subject].book += " · exact volume assignment not verified";
+      subjects[subject].book = "Ganita Manjari (2026–27) · exact part and chapter list not verified";
+      subjects[subject].chapters = [];
+      subjects[subject].sourceNote = "Chapter import is disabled until the current official Part I/Part II table of contents is verified. The older chapter list is intentionally withheld to avoid importing outdated or mixed editions.";
     }
   }
 

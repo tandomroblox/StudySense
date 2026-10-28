@@ -76,10 +76,12 @@ test("Single-volume Grade 6 Social Science is not falsely split", () => {
   assert.equal(catalog["6"]["Social Science"].chapters.length, 14);
 });
 
-test("Unverified Grade 9 Maths volume assignment stays combined and labelled", () => {
+test("Unverified Grade 9 Mathematics does not expose outdated chapter imports", () => {
   assert.ok(catalog["9"]["Mathematics"]);
   assert.ok(!catalog["9"]["Mathematics — Part I"]);
-  assert.match(catalog["9"]["Mathematics"].book, /assignment not verified/i);
+  assert.equal(catalog["9"]["Mathematics"].chapters.length, 0);
+  assert.match(catalog["9"]["Mathematics"].book, /exact part and chapter list not verified/i);
+  assert.match(catalog["9"]["Mathematics"].sourceNote, /import is disabled/i);
 });
 
 test("Unverified language catalogues do not fabricate chapter titles", () => {
