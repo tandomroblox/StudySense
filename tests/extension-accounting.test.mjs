@@ -10,11 +10,13 @@ const source = fs.readFileSync(path.join(root, "browser-extension/background.js"
 const event = { addListener() {} };
 let storageState = {};
 const createdWindows = [];
+const openTabs = [];
+const redirectedTabs = [];
 const ruleChanges = [];
 const chrome = {
   runtime: { onInstalled: event, onStartup: event, onMessage: event, sendMessage: async () => ({}), getURL: path => "chrome-extension://studysense/" + path },
   alarms: { onAlarm: event, create() {} },
-  tabs: { onActivated: event, onUpdated: event, query: async () => [] },
+  tabs: { onActivated: event, onUpdated: event, query: async () => openTabs, update: async (id, properties) => { redirectedTabs.push({ id, ...properties }); return { id, ...properties }; } },
   windows: { onFocusChanged: event, WINDOW_ID_NONE: -1, getLastFocused: async () => ({ focused: false }), create: async options => { createdWindows.push(options); return { id: 99 }; } },
   storage: { local: {
     get: async keys => {
@@ -95,6 +97,9 @@ test("combined allowance across flagged sites opens the break window and starts 
     notificationsEnabled: true
   };
   const before = createdWindows.length;
+  openTabs.length = 0;
+  redirectedTabs.length = 0;
+  openTabs.push({ id: 7, url: "https://www.youtube.com/watch?v=example" });
   await api.tick();
   assert.equal(storageState.phase, "cooldown");
   assert.equal(storageState.usedSeconds, 900);
@@ -103,6 +108,7 @@ test("combined allowance across flagged sites opens the break window and starts 
   const popup = createdWindows.slice(before).find(options => options.url.endsWith("/break.html"));
   assert.ok(popup, "The cooldown must open the custom break window");
   assert.equal(popup.type, "popup");
+  assert.ok(redirectedTabs.some(tab => tab.id === 7 && tab.url.endsWith("/break.html")), "Already-open flagged tabs should be redirected to the break screen");
   assert.ok(ruleChanges.some(change => change.addRules?.some(rule => rule.action.type === "block" && rule.condition.urlFilter.includes("instagram.com"))),
     "Cooldown should block the flagged websites");
 });

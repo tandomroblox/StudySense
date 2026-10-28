@@ -59,7 +59,7 @@ assert.equal(manifest.manifest_version, 3);
 assert.ok(manifest.permissions.includes("storage"));
 assert.ok(manifest.permissions.includes("declarativeNetRequest"));
 assert.ok(manifest.permissions.includes("notifications"));
-assert.equal(manifest.version, "1.2.0");
+assert.equal(manifest.version, "1.2.1");
 assert.equal(Object.hasOwn(manifest, "optional_host_permissions"), false, "Default site tracking should not require per-site host confirmation");
 assert.ok(read("browser-extension/background.js").includes("DEFAULT_RESTRICTED_DOMAINS"));
 for (const resource of [manifest.background.service_worker, manifest.action.default_popup, ...Object.values(manifest.icons || {}), ...Object.values(manifest.action.default_icon || {})]) {
@@ -85,3 +85,5 @@ assert.ok(extensionRelease.includes("contents: write"), "Time Guard release work
 
 assert.ok(read("browser-extension/background.js").includes('chrome.windows.create'), "Cooldown must open the custom break popup");
 assert.ok(read(".github/workflows/release-time-guard.yml").includes("browser-extension/break.js"), "The release ZIP must include break popup assets");
+
+assert.ok(read("browser-extension/background.js").includes("redirectOpenRestrictedTabs"), "Cooldown must redirect already-open flagged tabs to the break screen");

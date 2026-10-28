@@ -92,6 +92,18 @@ async function syncRules(domains, phase) {
   })) : [];
   await chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds, addRules });
 }
+async function redirectOpenRestrictedTabs(domains) {
+  try {
+    const tabs = await chrome.tabs.query({});
+    const redirects = tabs
+      .filter(tab => Number.isInteger(tab.id) && domains.some(domain => {
+        const host = asPlainWebsite(tab.url);
+        return host && matchesDomain(host, domain);
+      }))
+      .map(tab => chrome.tabs.update(tab.id, { url: chrome.runtime.getURL("break.html") }).catch(() => {}));
+    await Promise.all(redirects);
+  } catch (_) {}
+}
 function openBreakPopup() {
   try {
     const pending = chrome.windows.create({
@@ -178,6 +190,7 @@ async function tick() {
   await syncRules(restricted, phase);
   if (cooldownStarted) {
     notifyCooldown();
+    await redirectOpenRestrictedTabs(restricted);
     openBreakPopup();
   }
   await sendStateChanged();
