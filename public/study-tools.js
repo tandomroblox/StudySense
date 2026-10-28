@@ -92,6 +92,7 @@
   };
   let cache = { exams: [], chapters: [], practice: [], flashcards: [], tasks: [], revisions: [], library: [], profile: null };
   let refreshPromise = null;
+  let accountGeneration = 0;
   let pendingReview = false;
   let lastPractice = null;
 
@@ -112,7 +113,7 @@
     });
     const practiceBySubject = new Map();
     for (const p of recentPractice) {
-      const key = String(p.subject || "");
+      const key = String(p.subject || "").replace(/\\s+—\\s+Part\\s+(?:I|II)$/i, "");
       const current = practiceBySubject.get(key) || { questions: 0, correct: 0 };
       current.questions += Number(p.questions) || 0;
       current.correct += Number(p.correct) || 0;
@@ -122,7 +123,8 @@
       const own = chapters.filter(c => c.exam_id === exam.id);
       const statusScore = { not_started: 0, learning: 35, revising: 70, mastered: 100 };
       const coverage = own.length ? Math.round(own.reduce((sum, c) => sum + (statusScore[c.status] || 0), 0) / own.length) : null;
-      const subjectNames = new Set(own.map(c => c.subject));
+      const normaliseSubject = value => String(value || "").replace(/\\s+—\\s+Part\\s+(?:I|II)$/i, "");
+      const subjectNames = new Set(own.map(c => normaliseSubject(c.subject)));
       let questions = 0, correct = 0;
       for (const subject of subjectNames) {
         const item = practiceBySubject.get(subject);
@@ -249,13 +251,14 @@
   async function refreshData() {
     if (appPanel.hidden) return;
     if (refreshPromise) return refreshPromise;
+    const generation = accountGeneration;
     refreshPromise = (async () => {
     const requests = await Promise.allSettled([
       safeApi("/api/exams"), safeApi("/api/practice"), safeApi("/api/flashcards"),
       safeApi("/api/tasks"), safeApi("/api/revisions"), safeApi("/api/library"), safeApi("/api/profile")
     ]);
-    if (appPanel.hidden) {
-      cache = { exams: [], chapters: [], practice: [], flashcards: [], tasks: [], revisions: [], library: [], profile: null };
+    if (appPanel.hidden || generation !== accountGeneration) {
+      if (appPanel.hidden) cache = { exams: [], chapters: [], practice: [], flashcards: [], tasks: [], revisions: [], library: [], profile: null };
       return;
     }
     const keys = ["exams","practice","flashcards","tasks","revisions","library","profile"];
@@ -422,6 +425,7 @@
   });
 
   function clearPrivateCache() {
+    accountGeneration++;
     cache = { exams: [], chapters: [], practice: [], flashcards: [], tasks: [], revisions: [], library: [], profile: null };
     renderMetricsSummary();
   }
