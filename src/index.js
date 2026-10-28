@@ -334,6 +334,23 @@ export default {
     }
 
 
+
+    if (url.pathname === "/api/profile" && ["GET","PUT"].includes(request.method)) {
+      const session=await readSession(request,env.SESSION_SECRET);
+      if(!session)return json({error:"Please sign in to manage your profile."},401);
+      if(request.method==="GET"){try{const p=await env.DB.prepare("SELECT display_name,grade,school,daily_goal_minutes FROM user_profiles WHERE user_id=?").bind(session.sub).first();return json({profile:p||{display_name:"",grade:9,school:"",daily_goal_minutes:60}});}catch{return json({error:"Profile database migration is not applied yet."},503);}}
+      const b=await bodyJson(request),name=typeof b?.display_name==="string"?b.display_name.trim():"",school=typeof b?.school==="string"?b.school.trim():"",grade=Number(b?.grade),goal=Number(b?.daily_goal_minutes);
+      if(name.length>60||school.length>120||!Number.isInteger(grade)||grade<6||grade>10||!Number.isInteger(goal)||goal<15||goal>600)return json({error:"Check your name, school, class (6–10), and study goal (15–600 minutes)."},400);
+      try{await env.DB.prepare("INSERT INTO user_profiles(user_id,display_name,grade,school,daily_goal_minutes,updated_at) VALUES(?,?,?,?,?,datetime('now')) ON CONFLICT(user_id) DO UPDATE SET display_name=excluded.display_name,grade=excluded.grade,school=excluded.school,daily_goal_minutes=excluded.daily_goal_minutes,updated_at=datetime('now')").bind(session.sub,name,grade,school,goal).run();return json({profile:{display_name:name,grade,school,daily_goal_minutes:goal}});}catch{return json({error:"Could not save profile. Check that migration 0005 has been applied."},500);}
+    }
+    if(url.pathname==="/api/tutor"&&request.method==="POST"){
+      const session=await readSession(request,env.SESSION_SECRET);if(!session)return json({error:"Please sign in to use the AI tutor."},401);
+      if(!env.AI||typeof env.AI.run!=="function")return json({error:"The AI tutor is not enabled on the live Worker yet. The AI binding must be deployed first."},503);
+      const b=await bodyJson(request),grade=Number(b?.grade),subject=typeof b?.subject==="string"?b.subject.trim():"",chapter=typeof b?.chapter==="string"?b.chapter.trim():"",question=typeof b?.question==="string"?b.question.trim():"";
+      if(!Number.isInteger(grade)||grade<6||grade>10||!["Mathematics","Science","Social Science","English","Hindi","Telugu"].includes(subject)||chapter.length>150||!question||question.length>2000)return json({error:"Choose a class (6–10), a valid subject, and a question under 2,000 characters."},400);
+      try{const result=await env.AI.run("@cf/meta/llama-3.1-8b-instruct",{messages:[{role:"system",content:"You are StudySense, a careful school tutor for Indian students in Classes 6–10. Only help with school learning, lesson explanations, worked examples, practice questions, flashcards, and doubt clarification. Stay within the user's subject and class level. Explain step by step in clear age-appropriate language. Do not pretend to have read a textbook or syllabus that was not supplied. If you are unsure or the question depends on a specific textbook, say so and ask for the relevant passage. Never fabricate citations or page numbers. When quizzing, ask one question at a time and wait for the student's answer. For ordinary doubts, answer directly and finish with one short check-your-understanding question. Briefly redirect unrelated requests to school learning."},{role:"user",content:"Student class: "+grade+"\nSubject: "+subject+"\nChapter: "+(chapter||"Not specified")+"\nQuestion: "+question}],max_tokens:900,temperature:0.2});const answer=typeof result?.response==="string"?result.response:"";if(!answer)return json({error:"The tutor returned an empty response. Please try again."},502);return json({answer,model:"Cloudflare Workers AI"});}catch(error){console.error("StudySense tutor request failed",{name:error instanceof Error?error.name:"UnknownError"});return json({error:"The tutor could not answer right now. Please try again in a moment."},502);}
+    }
+
     if (url.pathname === "/api/exams" || url.pathname.startsWith("/api/exams/") || url.pathname === "/api/chapters" || url.pathname.startsWith("/api/chapters/")) {
       const session = await readSession(request, env.SESSION_SECRET);
       if (!session) return json({ error: "Please sign in to manage exams and syllabus." }, 401);
