@@ -25,7 +25,7 @@ const curriculumSources = {
     links: [
       ["NCERT 2026–27 textbook catalogue", "https://ncert.nic.in/list-publication.php?ln=en"],
       ["NCERT e-textbooks (Classes 1–12)", "https://ncert.nic.in/textbook.php"],
-      ["NCERT notices and corrections", "https://ncert.nic.in/"]
+      ["NCERT Class 8 Social Science Part 2 notice", "https://www.ncert.nic.in/pdf/announcement/notices/ncert_pressrelease_class8_sstp2.pdf"]
     ]
   },
   "9": {
@@ -34,7 +34,7 @@ const curriculumSources = {
     links: [
       ["NCERT Grade 9 syllabus · Languages (Part 1)", "https://www.ncert.nic.in/pdf/announcement/Syllabus_Secondary_Stage_Phase_I_Grade_9_Part_1_Languages.pdf"],
       ["NCERT Grade 9 syllabus · Science, Mathematics & Social Science (Part 2)", "https://www.ncert.nic.in/pdf/announcement/Syllabus_Secondary_Stage_Phase_I_Grade_9_Part_2.pdf"],
-      ["NCERT Grade 9 syllabus · Part 3", "https://ncert.nic.in/"],
+      ["NCERT Grade 9 syllabus · Part 3", "https://www.ncert.nic.in/pdf/announcement/Syllabus_Secondary_Stage_Phase_I_Part%203_Grade_9-DRAFT.pdf"],
       ["NCERT textbook portal", "https://ncertbooks.ncert.gov.in/"],
       ["CBSE 2026–27 curriculum (Classes IX–X)", "https://cbseacademic.nic.in/curriculum_2027.html"]
     ]
