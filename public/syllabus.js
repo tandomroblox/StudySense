@@ -1,0 +1,32 @@
+/* NCERT textbook chapter catalog for the 2026–27 tracker.
+ * Class 9 uses the new NCERT books. Class 10 uses the previous textbook set.
+ * Only chapter titles verified against available textbook contents are included.
+ * Language and school-specific subjects are intentionally not guessed.
+ */
+window.STUDYSENSE_SYLLABUS = {
+  "6": {
+    "Mathematics": { book: "Ganita Prakash", chapters: ["Patterns in Mathematics","Lines and Angles","Number Play","Data Handling and Presentation","Prime Time","Perimeter and Area","Fractions","Playing with Constructions","Symmetry","The Other Side of Zero"] },
+    "Science": { book: "Curiosity", chapters: ["The Wonderful World of Science","Diversity in the Living World","Mindful Eating: A Path to a Healthy Body","Exploring Magnets","Measurement of Length and Motion","Materials Around Us","Temperature and its Measurement","A Journey through States of Water","Methods of Separation in Everyday Life","Living Creatures: Exploring their Characteristics","Nature's Treasures","Beyond Earth"] },
+    "Social Science": { book: "Exploring Society: India and Beyond", chapters: ["Locating Places on the Earth","Oceans and Continents","Landforms and Life","Timeline and Sources of History","India, That Is Bharat","The Beginnings of Indian Civilisation","India's Cultural Roots","Unity in Diversity, or 'Many in the One'","Family and Community","Grassroots Democracy, Part 1: Governance","Grassroots Democracy, Part 2: Local Government in Rural Areas","Grassroots Democracy, Part 3: Local Government in Urban Areas","The Value of Work","Economic Activities Around Us"] }
+  },
+  "7": {
+    "Mathematics": { book: "Ganita Prakash, Parts I–II", chapters: ["Large Numbers Around Us","Arithmetic Expressions","A Peek Beyond the Point","Expressions Using Letter-Numbers","Parallel and Intersecting Lines","Number Play","A Tale of Three Intersecting Lines","Working with Fractions","Geometric Twins","Operations with Integers","Finding Common Ground","Another Peek Beyond the Point","Connecting the Dots...","Constructions and Tilings","Finding the Unknown"] },
+    "Science": { book: "Curiosity", chapters: ["The Ever-Evolving World of Science","Exploring Substances: Acidic, Basic, and Neutral","Electricity: Circuits and their Components","The World of Metals and Non-metals","Changes Around Us: Physical and Chemical"] },
+    "Social Science": { book: "Exploring Society: India and Beyond", chapters: [] }
+  },
+  "8": {
+    "Mathematics": { book: "Ganita Prakash, Parts I–II", chapters: ["A Square and A Cube","Power Play","A Story of Numbers","Quadrilaterals","Number Play","We Distribute, Yet Things Multiply","Proportional Reasoning-1","Fractions in Disguise","The Baudhayana-Pythagoras Theorem","Proportional Reasoning-2","Exploring Some Geometric Themes","Tales by Dots and Lines","Algebra Play","Area"] },
+    "Science": { book: "Curiosity", chapters: ["Exploring the Investigative World of Science","The Invisible Living World: Beyond Our Naked Eye","Health: The Ultimate Treasure","Electricity: Magnetic and Heating Effects","Exploring Forces","Pressure, Winds, Storms, and Cyclones","Particulate Nature of Matter","Nature of Matter: Elements, Compounds, and Mixtures","The Amazing World of Solutes, Solvents, and Solutions","Light: Mirrors and Lenses","Keeping Time with the Skies","How Nature Works in Harmony","Our Home: Earth, a Unique Life Sustaining Planet"] },
+    "Social Science": { book: "Exploring Society: India and Beyond, Parts I–II", chapters: [] }
+  },
+  "9": {
+    "Mathematics": { book: "Ganita Manjari", chapters: ["Number Systems","Polynomials","Coordinate Geometry","Linear Equations in Two Variables","Introduction to Euclid's Geometry","Lines and Angles","Triangles","Quadrilaterals"] },
+    "Science": { book: "Exploration", chapters: ["Exploration, Entering the World of Secondary Science","Cell, The Building Block of Life","Tissues in Action","Describing Motion Around Us","Exploring Mixtures and their Separation","How Forces Affect Motion","Work, Energy and Simple Machines","Journey Inside the Atom","Atomic Foundations of Matter","Sound Waves, Characteristics and Applications","Reproduction, How Life Continues","Patterns in Life, Diversity and Classification","Earth as a System, Energy, Matter and Life"] },
+    "Social Science": { book: "Understanding Society: India and Beyond, Parts I–II", chapters: ["Part I — Understanding Social Science","Part I — Shaping of the Earth's Surface","Part I — Atmosphere and Climate","Part I — Early Humans and Beginning of Civilisation","Part I — State and Society up to 1000 CE","Part I — Democracy","Part I — Elections","Part I — Building Blocks in Economics: The Problem of Choice","Part I — The Price Puzzle: What Drives the Market","Part II — Oceans and Life","Part II — Life on Earth","Part II — Resistance and Resilience (1000–1700 CE)","Part II — Governance and Public Policy","Part II — Managing Your Personal Finances","Part II — From Ideas to Startups"] }
+  },
+  "10": {
+    "Mathematics": { book: "NCERT Mathematics (existing textbook set)", chapters: ["Real Numbers","Polynomials","Pair of Linear Equations in Two Variables","Quadratic Equations","Arithmetic Progressions","Triangles","Coordinate Geometry","Introduction to Trigonometry","Some Applications of Trigonometry","Circles","Areas Related to Circles","Surface Areas and Volumes","Statistics","Probability"] },
+    "Science": { book: "NCERT Science (existing textbook set)", chapters: ["Chemical Reactions and Equations","Acids, Bases and Salts","Metals and Non-metals","Carbon and its Compounds","Life Processes","Control and Coordination","How do Organisms Reproduce?","Heredity","Light – Reflection and Refraction","The Human Eye and the Colourful World","Electricity","Magnetic Effects of Electric Current","Our Environment"] },
+    "Social Science": { book: "NCERT Social Science (existing textbook set)", chapters: ["The Rise of Nationalism in Europe","Nationalism in India","The Making of a Global World","The Age of Industrialisation","Print Culture and the Modern World","Resources and Development","Forest and Wildlife Resources","Water Resources","Agriculture","Minerals and Energy Resources","Manufacturing Industries","Lifelines of National Economy","Power Sharing","Federalism","Gender, Religion and Caste","Political Parties","Outcomes of Democracy","Development","Sectors of the Indian Economy","Money and Credit","Globalisation and the Indian Economy","Consumer Rights"] }
+  }
+};
