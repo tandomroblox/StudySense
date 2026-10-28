@@ -38,6 +38,10 @@ test("The shared shell has unique IDs and all cross-page destinations exist", ()
     "examCenterSection", "syllabusTrackerSection", "examStudyPlanSection", "tutorSection",
     "flashcardsSection", "practiceLogSection", "dashboardStats"]) {
     assert.ok(shell.includes('id="' + id + '"'), "Missing shared element " + id);
+    
+  }
+  for (const subject of ["Mathematics — Part I", "Mathematics — Part II", "Social Science — Part I", "Social Science — Part II"]) {
+    assert.ok(shell.includes("<option>" + subject + "</option>"), "Manual chapter entry must support " + subject);
   }
 });
 
