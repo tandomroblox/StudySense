@@ -13,7 +13,7 @@
     </div>
     <p class="muted hub-intro">Your revision schedule, practice questions, progress estimate, and personal study notes — tied to the chapters you add to your exams.</p>
     <div class="productivity-grid">
-      <section class="productivity-panel">
+      <section id="hubReadinessPanel" class="productivity-panel">
         <h3>Exam readiness</h3>
         <p class="hub-muted">An estimate from recorded chapter progress and practice results, not a prediction of marks.</p>
         <div id="hubReadiness" class="hub-list"><p class="hub-empty">Loading your study data…</p></div>
@@ -21,20 +21,20 @@
         <p class="hub-muted">The summary is generated on this device when you click. Nothing is sent to a parent automatically.</p>
         <p id="hubReadinessMessage" class="hub-error" role="status"></p>
       </section>
-      <section class="productivity-panel">
+      <section id="hubDailyPlanPanel" class="productivity-panel">
         <h3>Today's suggested plan</h3>
         <p class="hub-muted">Builds a manageable session from your daily goal, due revisions, and chapters for the nearest upcoming exams. Suggestions become tasks only when you choose.</p>
         <div id="hubDailyPlan" class="hub-list"><p class="hub-empty">Preparing your study plan…</p></div>
         <div class="hub-row-actions"><button id="hubAddPlanTasks" type="button">Add plan to my tasks</button><button id="hubRefreshPlan" class="hub-btn-secondary" type="button">Refresh plan</button></div>
         <p id="hubDailyPlanMessage" class="hub-error" role="status"></p>
       </section>
-      <section class="productivity-panel">
+      <section id="hubRevisionPanel" class="productivity-panel">
         <h3>Smart revision queue</h3>
         <p class="hub-muted">Review a chapter and rate how it felt. The next date adjusts to your rating.</p>
         <div id="hubRevisionQueue" class="hub-list"><p class="hub-empty">Loading your revisions…</p></div>
         <p id="hubRevisionMessage" class="hub-error" role="status"></p>
       </section>
-      <section class="productivity-panel">
+      <section id="hubPracticePanel" class="productivity-panel">
         <h3>AI practice generator</h3>
         <p class="hub-muted">Generates original practice. Add a short lesson excerpt to keep questions grounded in your exact material.</p>
         <form id="hubPracticeForm">
@@ -57,7 +57,7 @@
         </form>
         <p id="hubResultMessage" class="hub-error" role="status"></p>
       </section>
-      <section class="productivity-panel">
+      <section id="hubLibraryPanel" class="productivity-panel">
         <h3>Personal study library</h3>
         <p class="hub-muted">Save notes, formulas, definitions, and doubts against the exact book part and chapter. Items are private to your account.</p>
         <form id="hubLibraryForm">
