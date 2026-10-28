@@ -41,6 +41,14 @@
         </form>
         <p id="hubPracticeMessage" class="hub-error" role="status"></p>
         <pre id="hubGeneratedPractice" class="hub-answer" hidden></pre>
+        <form id="hubPracticeResultForm" class="hub-share" hidden>
+          <p class="hub-muted">Finished the questions? Record your score so the readiness estimate can use it.</p>
+          <label for="hubResultQuestions">Questions attempted</label><input id="hubResultQuestions" type="number" min="1" max="10" required>
+          <label for="hubResultCorrect">Correct answers</label><input id="hubResultCorrect" type="number" min="0" max="10" required>
+          <label for="hubResultNotes">Reflection (optional)</label><textarea id="hubResultNotes" maxlength="1000" rows="2" placeholder="What was difficult?"></textarea>
+          <button id="hubRecordPractice" type="submit">Record result in readiness</button>
+        </form>
+        <p id="hubResultMessage" class="hub-error" role="status"></p>
       </section>
       <section class="productivity-panel">
         <h3>Personal study library</h3>
@@ -83,8 +91,9 @@
     return node;
   };
   let cache = { exams: [], chapters: [], practice: [], flashcards: [], tasks: [], revisions: [], library: [], profile: null };
-  let loading = false;
+  let refreshPromise = null;
   let pendingReview = false;
+  let lastPractice = null;
 
   function renderReadiness() {
     const out = $("hubReadiness");
@@ -238,13 +247,13 @@
     renderLibrary();
   }
   async function refreshData() {
-    if (loading || appPanel.hidden) return;
-    loading = true;
+    if (appPanel.hidden) return;
+    if (refreshPromise) return refreshPromise;
+    refreshPromise = (async () => {
     const requests = await Promise.allSettled([
       safeApi("/api/exams"), safeApi("/api/practice"), safeApi("/api/flashcards"),
       safeApi("/api/tasks"), safeApi("/api/revisions"), safeApi("/api/library"), safeApi("/api/profile")
     ]);
-    loading = false;
     const keys = ["exams","practice","flashcards","tasks","revisions","library","profile"];
     const errors = [];
     requests.forEach((result, index) => {
@@ -271,6 +280,9 @@
     $("hubRevisionMessage").textContent = revisionError || "";
     const libraryError = errors.find(e => e.startsWith("library:"));
     $("hubLibraryMessage").textContent = libraryError || "";
+    })();
+    try { return await refreshPromise; }
+    finally { refreshPromise = null; }
   }
 
   $("hubPracticeForm").addEventListener("submit", async event => {
@@ -288,10 +300,50 @@
       })});
       $("hubGeneratedPractice").textContent = data.practice;
       $("hubGeneratedPractice").hidden = false;
+      lastPractice = { grade: Number($("hubGrade").value), subject: $("hubSubject").value, chapter: $("hubChapter").value.trim(), type: $("hubQuestionType").value, count: Number($("hubQuestionCount").value) };
+      $("hubResultQuestions").max = String(lastPractice.count);
+      $("hubResultQuestions").value = String(lastPractice.count);
+      $("hubResultCorrect").max = String(lastPractice.count);
+      $("hubResultCorrect").value = "";
+      $("hubResultNotes").value = "";
+      $("hubResultMessage").textContent = "";
+      $("hubResultMessage").className = "hub-error";
+      $("hubPracticeResultForm").hidden = false;
       $("hubPracticeMessage").textContent = data.source_grounded ? "Generated using the lesson excerpt you supplied." : "General practice generated without textbook context; check it against your syllabus.";
       $("hubPracticeMessage").className = "hub-error" + (data.source_grounded ? " hub-success" : "");
     } catch (error) {
       $("hubPracticeMessage").textContent = error.message;
+    } finally { button.disabled = false; }
+  });
+
+  $("hubPracticeResultForm").addEventListener("submit", async event => {
+    event.preventDefault();
+    const button = $("hubRecordPractice");
+    const attempted = Number($("hubResultQuestions").value);
+    const correct = Number($("hubResultCorrect").value);
+    if (!lastPractice) {
+      $("hubResultMessage").textContent = "Generate a practice set first.";
+      return;
+    }
+    if (!Number.isInteger(attempted) || attempted < 1 || attempted > lastPractice.count ||
+        !Number.isInteger(correct) || correct < 0 || correct > attempted) {
+      $("hubResultMessage").textContent = "Enter 1–" + lastPractice.count + " attempted questions and a correct count no greater than attempted.";
+      return;
+    }
+    button.disabled = true;
+    $("hubResultMessage").textContent = "Saving your result…";
+    try {
+      const notes = ["AI-generated practice", "Class " + lastPractice.grade, "Type: " + lastPractice.type, $("hubResultNotes").value.trim()].filter(Boolean).join(" · ");
+      await safeApi("/api/practice", {
+        method: "POST",
+        body: JSON.stringify({ subject: lastPractice.subject, topic: lastPractice.chapter, questions: attempted, correct, notes })
+      });
+      $("hubResultMessage").textContent = "Result saved. Readiness data refreshed.";
+      $("hubResultMessage").className = "hub-error hub-success";
+      await refreshData();
+    } catch (error) {
+      $("hubResultMessage").textContent = error.message;
+      $("hubResultMessage").className = "hub-error";
     } finally { button.disabled = false; }
   });
 
@@ -365,8 +417,16 @@
     } finally { button.disabled = false; }
   });
 
+  function clearPrivateCache() {
+    cache = { exams: [], chapters: [], practice: [], flashcards: [], tasks: [], revisions: [], library: [], profile: null };
+    renderMetricsSummary();
+  }
   const observer = new MutationObserver(() => {
-    if (!appPanel.hidden) refreshData().catch(error => {
+    if (appPanel.hidden) {
+      clearPrivateCache();
+      return;
+    }
+    refreshData().catch(error => {
       $("hubReadinessMessage").textContent = error.message || "Could not load study tools.";
     });
   });
