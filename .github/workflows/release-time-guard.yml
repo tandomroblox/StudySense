@@ -1,0 +1,58 @@
+name: Package StudySense Time Guard
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "browser-extension/**"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  package-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Read extension version
+        id: metadata
+        shell: bash
+        run: |
+          version=$(node -p "require('./browser-extension/manifest.json').version")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Validate extension scripts
+        run: |
+          node --check browser-extension/background.js
+          node --check browser-extension/popup.js
+          node -e "const fs=require('node:fs'); const m=JSON.parse(fs.readFileSync('browser-extension/manifest.json','utf8')); for (const f of [m.background.service_worker,m.action.default_popup,...Object.values(m.icons||{}),...Object.values(m.action.default_icon||{})]) if (!fs.existsSync('browser-extension/'+f)) throw new Error('Missing extension asset: '+f)"
+
+      - name: Build the installable ZIP
+        shell: bash
+        run: |
+          mkdir -p dist
+          zip -j dist/StudySense-Time-Guard.zip \
+            browser-extension/manifest.json \
+            browser-extension/background.js \
+            browser-extension/popup.html \
+            browser-extension/popup.css \
+            browser-extension/popup.js \
+            browser-extension/icon.png \
+            browser-extension/icon.svg
+          unzip -t dist/StudySense-Time-Guard.zip
+
+      - name: Publish the downloadable release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: time-guard-${{ github.sha }}
+          name: StudySense Time Guard v${{ steps.metadata.outputs.version }}
+          body: |
+            Installable ZIP for the StudySense Time Guard Chrome/Edge extension.
+            Extract the ZIP, open chrome://extensions or edge://extensions, enable Developer mode, then select Load unpacked and choose the extracted folder containing manifest.json.
+
+            Site usage totals remain local to the browser profile.
+          files: dist/StudySense-Time-Guard.zip
+          make_latest: true

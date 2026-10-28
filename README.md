@@ -33,11 +33,15 @@ The optional extension lives in `browser-extension/` and supports Chrome/Edge MV
 
 ### Install locally
 
-1. Download or clone the repository and extract it.
+The easiest route is to open the [Time Guard page](https://studysense.studysenseapp.workers.dev/time-guard.html) and download the latest packaged extension. The release ZIP contains only the extension files; extract it and choose the extracted folder containing `manifest.json`.
+
+1. Download the [latest StudySense Time Guard ZIP](https://github.com/tandomroblox/StudySense/releases/latest/download/StudySense-Time-Guard.zip), then extract it.
 2. Open `chrome://extensions` in Chrome or `edge://extensions` in Microsoft Edge.
 3. Enable **Developer mode**.
-4. Select **Load unpacked** and choose the repository's `browser-extension` folder.
+4. Select **Load unpacked** and choose the extracted folder containing `manifest.json`.
 5. Open StudySense Time Guard from the browser toolbar, choose a tracking mode, and save your settings.
+
+The extension is manually installed as an unpacked Chromium extension; this is not a Chrome Web Store listing.
 
 ### Monitoring and screen-time controls
 

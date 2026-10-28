@@ -8,11 +8,13 @@ const read = file => fs.readFileSync(path.join(root, file), "utf8");
 const requiredFiles = [
   "src/index.js", "wrangler.jsonc", "public/index.html", "public/app-shell.html",
   "public/app-shell.js", "public/planner.html", "public/exams.html", "public/syllabus.html",
-  "public/learn.html", "public/library.html", "public/profile.html", "public/style.css",
+  "public/learn.html", "public/library.html", "public/profile.html", "public/time-guard.html",
+  "public/time-guard.css", "public/style.css",
   "public/script.js", "public/syllabus.js", "public/sw.js", "public/study-tools.js",
   "public/study-tools.css", "tests/pages.test.mjs", "browser-extension/manifest.json",
-  "browser-extension/background.js", "browser-extension/popup.html",
+  "browser-extension/README.md", "browser-extension/background.js", "browser-extension/popup.html",
   "browser-extension/popup.css", "browser-extension/popup.js",
+  ".github/workflows/release-time-guard.yml",
   "migrations/0005_profiles.sql", "migrations/0006_revision_library.sql"
 ];
 for (const file of requiredFiles) assert.ok(fs.existsSync(path.join(root, file)), `Missing required file: ${file}`);
@@ -29,7 +31,7 @@ assert.deepEqual(duplicates, [], "Shared app shell must not contain duplicate ID
 
 const pageFiles = [
   "public/index.html", "public/planner.html", "public/exams.html",
-  "public/syllabus.html", "public/learn.html", "public/library.html", "public/profile.html",
+  "public/syllabus.html", "public/learn.html", "public/library.html", "public/profile.html", "public/time-guard.html",
   "public/app-shell.html"
 ];
 for (const htmlPath of pageFiles) {
@@ -72,3 +74,9 @@ assert.ok(read("public/sw.js").includes("/study-tools.css"), "Offline shell must
 assert.ok(read("migrations/0006_revision_library.sql").includes("study_library_items"));
 assert.ok(read("migrations/0006_revision_library.sql").includes("chapter_revision_state"));
 console.log("StudySense quality checks passed.");
+
+
+const extensionRelease = read(".github/workflows/release-time-guard.yml");
+assert.ok(extensionRelease.includes("softprops/action-gh-release@v2"), "Time Guard packages must be published as a release");
+assert.ok(extensionRelease.includes("StudySense-Time-Guard.zip"), "Time Guard release must contain the installable ZIP");
+assert.ok(extensionRelease.includes("contents: write"), "Time Guard release workflow needs release-write permission");
