@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "StudySense Website Time Guard",
+  "version": "1.0.0",
+  "description": "Track time on websites you choose and enforce a 15-minute allowance followed by a 35-minute cooldown.",
+  "permissions": [
+    "storage",
+    "tabs",
+    "alarms",
+    "declarativeNetRequest"
+  ],
+  "optional_host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "StudySense Time Guard",
+    "default_popup": "popup.html"
+  }
+}

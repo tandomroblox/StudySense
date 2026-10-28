@@ -1,0 +1,10 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>StudySense Time Guard</title><link rel="stylesheet" href="popup.css"><script src="popup.js" defer></script></head>
+<body>
+  <header><div class="mark">S</div><div><h1>StudySense</h1><p>Website Time Guard</p></div></header>
+  <section class="status-card"><p class="eyebrow">CURRENT STATUS</p><h2 id="phase">Loading…</h2><p id="clock">15:00 used</p><p id="note">Choose which websites to track below.</p></section>
+  <section><label for="domains">Websites to track (one domain per line)</label><textarea id="domains" rows="5" placeholder="youtube.com&#10;instagram.com&#10;example.com"></textarea><p class="hint">Only the domains you list are monitored. The extension asks permission for those sites when you save.</p><button id="save" type="button">Save websites & enable tracking</button><p id="message" role="status"></p></section>
+  <section><h2>Today's tracked time</h2><div id="usage" class="usage"><p class="hint">No tracked time yet.</p></div></section>
+  <footer>15 minutes of tracked website use → 35-minute cooldown. This extension cannot monitor other apps.</footer>
+</body></html>
