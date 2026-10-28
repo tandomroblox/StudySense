@@ -351,6 +351,38 @@ form.addEventListener("submit", async event => {
 
 const examForm=document.querySelector("#examForm"), examName=document.querySelector("#examName"), examDate=document.querySelector("#examDate"), examList=document.querySelector("#examList"), examMessage=document.querySelector("#examMessage");
 const chapterForm=document.querySelector("#chapterForm"), chapterExam=document.querySelector("#chapterExam"), chapterSubject=document.querySelector("#chapterSubject"), chapterName=document.querySelector("#chapterName"), chapterList=document.querySelector("#chapterList"), chapterMessage=document.querySelector("#chapterMessage"), studyPlan=document.querySelector("#studyPlan");
+const syllabusClass=document.querySelector("#syllabusClass"), syllabusSubject=document.querySelector("#syllabusSubject"), syllabusBookNote=document.querySelector("#syllabusBookNote"), importSyllabusButton=document.querySelector("#importSyllabusButton"), syllabusImportMessage=document.querySelector("#syllabusImportMessage");
+function renderSyllabusOptions(){
+ const grade=syllabusClass.value, entries=window.STUDYSENSE_SYLLABUS?.[grade]||{};
+ syllabusSubject.replaceChildren();
+ Object.keys(entries).forEach(subject=>syllabusSubject.append(new Option(subject,subject)));
+ renderSyllabusBookNote();
+}
+function renderSyllabusBookNote(){
+ const entry=window.STUDYSENSE_SYLLABUS?.[syllabusClass.value]?.[syllabusSubject.value];
+ if(!entry){syllabusBookNote.textContent="This subject's full chapter list has not been verified for this edition yet. No chapters will be guessed or imported.";importSyllabusButton.disabled=true;return}
+ syllabusBookNote.textContent=entry.book+" · "+(entry.chapters.length?entry.chapters.length+" chapters available":"Chapter list pending verification — no chapters will be imported.");
+ importSyllabusButton.disabled=!entry.chapters.length;
+}
+syllabusClass.addEventListener("change",renderSyllabusOptions);
+syllabusSubject.addEventListener("change",renderSyllabusBookNote);
+importSyllabusButton.addEventListener("click",async()=>{
+ const grade=syllabusClass.value,subject=syllabusSubject.value,entry=window.STUDYSENSE_SYLLABUS?.[grade]?.[subject];
+ if(!chapterExam.value){syllabusImportMessage.textContent="Add an exam first, then select it in the Exam field.";return}
+ if(!entry?.chapters?.length){syllabusImportMessage.textContent="No verified chapter list is available for this subject yet.";return}
+ importSyllabusButton.disabled=true;
+ try{
+  const existing=new Set(chapters.filter(c=>c.exam_id===chapterExam.value&&c.subject===subject).map(c=>c.title.trim().toLocaleLowerCase()));
+  const pending=entry.chapters.filter(title=>!existing.has(title.trim().toLocaleLowerCase()));
+  for(const title of pending){
+   await api("/api/chapters",{method:"POST",body:JSON.stringify({exam_id:chapterExam.value,subject,title})});
+  }
+  await loadExams();
+  syllabusImportMessage.textContent=pending.length?("Added "+pending.length+" chapters from "+entry.book+". Existing chapters were skipped."):"All chapters from this list are already in the selected exam.";
+ }catch(e){syllabusImportMessage.textContent="Import stopped: "+e.message+" You can click again; already-added chapters will be skipped."}
+ finally{renderSyllabusBookNote()}
+});
+renderSyllabusOptions();
 let exams=[], chapters=[];
 const statuses=[["not_started","Not started"],["learning","Learning"],["revising","Revising"],["mastered","Mastered"]];
 examDate.min=new Date().toISOString().slice(0,10);
