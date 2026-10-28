@@ -18,7 +18,7 @@ const requiredFiles = [
 for (const file of requiredFiles) assert.ok(fs.existsSync(path.join(root, file)), `Missing required file: ${file}`);
 
 const shellHtml = read("public/app-shell.html");
-const ids = [...shellHtml.matchAll(/\\bid=["']([^"']+)["']/g)].map(match => match[1]);
+const ids = [...shellHtml.matchAll(/\bid=["']([^"']+)["']/g)].map(match => match[1]);
 const idSet = new Set();
 const duplicates = [];
 for (const id of ids) {
@@ -34,12 +34,12 @@ const pageFiles = [
 ];
 for (const htmlPath of pageFiles) {
   const html = read(htmlPath);
-  for (const match of html.matchAll(/<(?:script|link|img)\\b[^>]*\\b(?:src|href)=["']([^"']+)["'][^>]*>/gi)) {
+  for (const match of html.matchAll(/<(?:script|link|img)\b[^>]*\b(?:src|href)=["']([^"']+)["'][^>]*>/gi)) {
     const uri = match[1];
     if (/^(?:https?:|data:|#|mailto:|javascript:)/i.test(uri)) continue;
     const pathname = new URL(uri, "https://studysense.invalid").pathname;
     if (pathname.startsWith("/api/")) continue;
-    const asset = path.join(root, "public", pathname.replace(/^\\//, ""));
+    const asset = path.join(root, "public", pathname.startsWith("/") ? pathname.slice(1) : pathname);
     assert.ok(fs.existsSync(asset), `Broken local asset reference in ${htmlPath}: ${uri}`);
   }
 }
