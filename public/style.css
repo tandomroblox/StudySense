@@ -187,3 +187,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .curriculum-link { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 48px; padding: 12px 14px; border: 1px solid #ffffff18; border-radius: 12px; background: #ffffff06; color: #dce5ff; text-decoration: none; line-height: 1.4; }
 .curriculum-link:hover, .curriculum-link:focus-visible { border-color: #8ea8ff88; background: #8ea8ff12; }
 .curriculum-link span { flex: 0 0 auto; color: #9bb1ff; }
+
+
+.syllabus-import { margin: 16px 0; padding: 16px; background: #ffffff05; border-color: #ffffff16; }
+.syllabus-import h3 { margin: 5px 0 8px; }
+.syllabus-import .form-row { margin-top: 12px; }
+.syllabus-import #importSyllabusButton { margin-top: 8px; }
+.syllabus-import button:disabled { opacity: .5; cursor: not-allowed; }
