@@ -551,12 +551,13 @@
     $("hubDailyPlanMessage").textContent = "Adding suggested tasks…";
     $("hubDailyPlanMessage").className = "hub-error";
     try {
+      const normalizeTaskTitle = title => String(title || "").trim().toLowerCase().replace(/\\s+\\(\\d+ min\\)$/, "");
       const existing = new Set(cache.tasks.filter(task => !(task.done === true || Number(task.completed) === 1))
-        .map(task => String(task.subject || "").toLowerCase() + "|" + String(task.title || "").trim().toLowerCase()));
+        .map(task => String(task.subject || "").toLowerCase() + "|" + normalizeTaskTitle(task.title)));
       let added = 0;
       let skipped = 0;
       for (const item of currentDailyPlan) {
-        const key = item.subject.toLowerCase() + "|" + item.title.trim().toLowerCase();
+        const key = item.subject.toLowerCase() + "|" + normalizeTaskTitle(item.title);
         if (existing.has(key)) { skipped++; continue; }
         await safeApi("/api/tasks", { method: "POST", body: JSON.stringify({ title: item.title + " (" + item.minutes + " min)", subject: item.subject }) });
         existing.add(key);
