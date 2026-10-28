@@ -52,7 +52,7 @@ const verifiedVolumeChapters = {
         "Geographical Diversity of India", "Understanding the Weather", "Climates of India",
         "New Beginnings: Cities and States", "The Rise of Empires", "The Age of Reorganisation",
         "The Gupta Era: An Age of Tireless Creativity", "How the Land Becomes Sacred",
-        "From the Rulers to the Ruled: Types of Governments", "The Constitution of India",
+        "From the Rulers to the Ruled: Types of Governments", "The Constitution of India — An Introduction",
         "From Barter to Money", "Understanding Markets"
       ],
       "Part II": [
