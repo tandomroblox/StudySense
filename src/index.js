@@ -376,7 +376,7 @@ export default {
       }
       if (url.pathname === "/api/chapters" && request.method === "POST") {
         const b=await bodyJson(request), title=typeof b?.title==="string"?b.title.trim():"", subject=typeof b?.subject==="string"?b.subject:"", examId=typeof b?.exam_id==="string"?b.exam_id:"";
-        const subjects=["Mathematics","Science","Social Science","English","Hindi","Telugu","IT-402","Skill Education","Vocational Education"];
+        const subjects=["Mathematics","Mathematics — Part I","Mathematics — Part II","Science","Social Science","Social Science — Part I","Social Science — Part II","English","Hindi","Telugu","IT-402","Skill Education","Vocational Education"];
         if(!title||title.length>150)return json({error:"Chapter name must be 1–150 characters."},400);
         if(!subjects.includes(subject))return json({error:"Choose a valid subject."},400);
         const exam=await env.DB.prepare("SELECT id FROM exams WHERE id=? AND user_id=?").bind(examId,session.sub).first();
