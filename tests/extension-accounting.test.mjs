@@ -37,7 +37,7 @@ test("tracked hosts include subdomains but not lookalike domains", () => {
 });
 
 test("restricted domain settings validate and deduplicate hostnames", () => {
-  assert.deepEqual(api.validDomainList(["youtube.com", "youtube.com", "instagram.com"]), ["youtube.com", "instagram.com"]);
+  assert.deepEqual(Array.from(api.validDomainList(["youtube.com", "youtube.com", "instagram.com"])), ["youtube.com", "instagram.com"]);
   assert.throws(() => api.validDomainList(["https://example.com/path"]), /Invalid domain|URL path/);
   assert.throws(() => api.validDomainList(Array.from({ length: 51 }, (_, i) => "site" + i + ".example")), /no more than 50/i);
 });
