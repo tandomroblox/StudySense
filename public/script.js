@@ -361,7 +361,7 @@ function renderSyllabusOptions(){
 function renderSyllabusBookNote(){
  const entry=window.STUDYSENSE_SYLLABUS?.[syllabusClass.value]?.[syllabusSubject.value];
  if(!entry){syllabusBookNote.textContent="This subject's full chapter list has not been verified for this edition yet. No chapters will be guessed or imported.";importSyllabusButton.disabled=true;return}
- syllabusBookNote.textContent=entry.book+" · "+(entry.chapters.length?entry.chapters.length+" chapters available":"Chapter list pending verification — no chapters will be imported.");
+ syllabusBookNote.textContent=entry.book+" · "+(entry.chapters.length?entry.chapters.length+" chapters available":"Chapter list pending verification — no chapters will be imported.")+(entry.sourceNote?"\n"+entry.sourceNote:"");
  importSyllabusButton.disabled=!entry.chapters.length;
 }
 syllabusClass.addEventListener("change",renderSyllabusOptions);
