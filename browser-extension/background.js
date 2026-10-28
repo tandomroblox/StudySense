@@ -98,7 +98,7 @@ function notifyCooldown() {
     try {
       chrome.notifications.create("studysense-cooldown", {
         type: "basic",
-        iconUrl: "icon.svg",
+        iconUrl: "icon.png",
         title: "StudySense · Break time",
         message: "Your 15-minute allowance for restricted websites is used. The 35-minute cooldown has started.",
         priority: 1
