@@ -174,3 +174,16 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .status { text-align:right; }
 .status.offline { color:#ffcf8a; letter-spacing:1px; }
 @media(max-width:560px) { .status { max-width:52%; line-height:1.5; } .status.offline { font-size:9px; } }
+
+
+/* Official 2026–27 curriculum library */
+.curriculum-library { margin: 0 0 18px; }
+.curriculum-library > label { display: block; margin: 14px 0 7px; }
+.curriculum-library select { width: 100%; }
+.curriculum-details { margin-top: 18px; }
+.curriculum-details h3 { margin: 0 0 8px; font-size: 1.08rem; }
+.curriculum-details > p { line-height: 1.6; }
+.curriculum-links { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 10px; margin-top: 14px; }
+.curriculum-link { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 48px; padding: 12px 14px; border: 1px solid #ffffff18; border-radius: 12px; background: #ffffff06; color: #dce5ff; text-decoration: none; line-height: 1.4; }
+.curriculum-link:hover, .curriculum-link:focus-visible { border-color: #8ea8ff88; background: #8ea8ff12; }
+.curriculum-link span { flex: 0 0 auto; color: #9bb1ff; }
