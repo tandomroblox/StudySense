@@ -85,4 +85,5 @@ assert.ok(extensionRelease.includes("contents: write"), "Time Guard release work
 
 assert.ok(read("browser-extension/background.js").includes('chrome.windows.create'), "Cooldown must open the custom break popup");
 assert.ok(read(".github/workflows/release-time-guard.yml").includes("browser-extension/break.js"), "The release ZIP must include break popup assets");
-\nassert.ok(read("browser-extension/background.js").includes("redirectOpenRestrictedTabs"), "Cooldown must redirect already-open flagged tabs to the break screen");\n
+
+assert.ok(read("browser-extension/background.js").includes("redirectOpenRestrictedTabs"), "Cooldown must redirect already-open flagged tabs to the break screen");
