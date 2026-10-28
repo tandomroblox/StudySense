@@ -1,0 +1,375 @@
+(() => {
+  "use strict";
+  const appPanel = document.querySelector("#appPanel");
+  if (!appPanel) return;
+
+  const hub = document.createElement("section");
+  hub.id = "productivityHub";
+  hub.className = "card productivity-hub";
+  hub.innerHTML = `
+    <div class="section-heading">
+      <div><p class="eyebrow">LEARN · REVISE · PREPARE</p><h2>StudySense learning engine</h2></div>
+      <span class="pill">Beta</span>
+    </div>
+    <p class="muted hub-intro">Your revision schedule, practice questions, progress estimate, and personal study notes — tied to the chapters you add to your exams.</p>
+    <div class="productivity-grid">
+      <section class="productivity-panel">
+        <h3>Exam readiness</h3>
+        <p class="hub-muted">An estimate from recorded chapter progress and practice results, not a prediction of marks.</p>
+        <div id="hubReadiness" class="hub-list"><p class="hub-empty">Loading your study data…</p></div>
+        <button id="hubDownloadSummary" class="hub-btn-secondary hub-share" type="button">Download parent-ready summary</button>
+        <p class="hub-muted">The summary is generated on this device when you click. Nothing is sent to a parent automatically.</p>
+        <p id="hubReadinessMessage" class="hub-error" role="status"></p>
+      </section>
+      <section class="productivity-panel">
+        <h3>Smart revision queue</h3>
+        <p class="hub-muted">Review a chapter and rate how it felt. The next date adjusts to your rating.</p>
+        <div id="hubRevisionQueue" class="hub-list"><p class="hub-empty">Loading your revisions…</p></div>
+        <p id="hubRevisionMessage" class="hub-error" role="status"></p>
+      </section>
+      <section class="productivity-panel">
+        <h3>AI practice generator</h3>
+        <p class="hub-muted">Generates original practice. Add a short lesson excerpt to keep questions grounded in your exact material.</p>
+        <form id="hubPracticeForm">
+          <label for="hubGrade">Class</label><select id="hubGrade"><option value="6">Class 6</option><option value="7">Class 7</option><option value="8">Class 8</option><option value="9" selected>Class 9</option><option value="10">Class 10</option></select>
+          <label for="hubSubject">Subject</label><select id="hubSubject"><option>Mathematics</option><option>Science</option><option>Social Science</option><option>English</option><option>Hindi</option><option>Telugu</option><option>IT-402</option><option>Skill Education</option><option>Vocational Education</option></select>
+          <label for="hubChapter">Topic / chapter</label><input id="hubChapter" maxlength="180" placeholder="e.g. Linear equations" required>
+          <label for="hubQuestionType">Question type</label><select id="hubQuestionType"><option value="mixed">Mixed practice</option><option value="mcq">MCQs</option><option value="short">Short answer</option><option value="numerical">Numericals</option></select>
+          <label for="hubQuestionCount">Number of questions</label><select id="hubQuestionCount"><option value="3">3 questions</option><option value="5" selected>5 questions</option><option value="10">10 questions</option></select>
+          <label for="hubContext">Lesson excerpt (optional)</label><textarea id="hubContext" maxlength="6000" rows="4" placeholder="Paste a short excerpt or your own notes; up to 6,000 characters."></textarea>
+          <button id="hubGeneratePractice" type="submit">Generate practice</button>
+        </form>
+        <p id="hubPracticeMessage" class="hub-error" role="status"></p>
+        <pre id="hubGeneratedPractice" class="hub-answer" hidden></pre>
+      </section>
+      <section class="productivity-panel">
+        <h3>Personal study library</h3>
+        <p class="hub-muted">Save notes, formulas, definitions, and doubts against the exact book part and chapter. Items are private to your account.</p>
+        <form id="hubLibraryForm">
+          <label for="hubLibraryGrade">Class</label><select id="hubLibraryGrade"><option value="6">Class 6</option><option value="7">Class 7</option><option value="8">Class 8</option><option value="9" selected>Class 9</option><option value="10">Class 10</option></select>
+          <label for="hubLibrarySubject">Subject</label><select id="hubLibrarySubject"><option>Mathematics</option><option>Science</option><option>Social Science</option><option>English</option><option>Hindi</option><option>Telugu</option><option>IT-402</option><option>Skill Education</option><option>Vocational Education</option></select>
+          <label for="hubTextbook">Exact textbook title</label><input id="hubTextbook" maxlength="160" placeholder="e.g. Ganita Prakash" />
+          <label for="hubBookPart">Part / edition (if applicable)</label><input id="hubBookPart" maxlength="80" placeholder="e.g. Part II · 2026–27" />
+          <label for="hubLibraryChapter">Chapter title</label><input id="hubLibraryChapter" maxlength="180" placeholder="Exact title from your book" />
+          <label for="hubItemType">Item type</label><select id="hubItemType"><option value="note">Note</option><option value="formula">Formula</option><option value="definition">Definition</option><option value="doubt">Doubt to revisit</option></select>
+          <label for="hubLibraryTitle">Title</label><input id="hubLibraryTitle" maxlength="160" placeholder="A short label" required />
+          <label for="hubLibraryContent">Content</label><textarea id="hubLibraryContent" maxlength="8000" rows="4" placeholder="Write your note, formula, definition, or question…" required></textarea>
+          <button id="hubSaveLibrary" type="submit">Save to library</button>
+        </form>
+        <p id="hubLibraryMessage" class="hub-error" role="status"></p>
+        <div id="hubLibraryItems" class="hub-list"><p class="hub-empty">Loading your library…</p></div>
+      </section>
+    </div>`;
+
+  const firstExisting = appPanel.querySelector(".profile-card");
+  if (firstExisting) appPanel.insertBefore(hub, firstExisting);
+  else appPanel.append(hub);
+
+  const $ = id => document.getElementById(id);
+  const safeApi = async (path, options) => {
+    const response = await fetch(path, {
+      credentials: "same-origin",
+      ...(options || {}),
+      headers: { ...((options && options.body) ? { "content-type": "application/json" } : {}), ...((options && options.headers) || {}) }
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || ("Request failed (" + response.status + ")"));
+    return data;
+  };
+  const make = (tag, cls, text) => {
+    const node = document.createElement(tag);
+    if (cls) node.className = cls;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  };
+  let cache = { exams: [], chapters: [], practice: [], flashcards: [], tasks: [], revisions: [], library: [], profile: null };
+  let loading = false;
+  let pendingReview = false;
+
+  function renderReadiness() {
+    const out = $("hubReadiness");
+    out.replaceChildren();
+    const exams = cache.exams;
+    const chapters = cache.chapters;
+    if (!exams.length) {
+      out.append(make("p", "hub-empty", "Add an exam and its chapter list in the Exam command centre to start readiness tracking."));
+      return;
+    }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const recentPractice = cache.practice.filter(p => {
+      const date = new Date(String(p.practiced_on || "") + "T00:00:00");
+      return !Number.isNaN(date.getTime()) && (today - date) <= 30 * 86400000 && date <= today;
+    });
+    const practiceBySubject = new Map();
+    for (const p of recentPractice) {
+      const key = String(p.subject || "");
+      const current = practiceBySubject.get(key) || { questions: 0, correct: 0 };
+      current.questions += Number(p.questions) || 0;
+      current.correct += Number(p.correct) || 0;
+      practiceBySubject.set(key, current);
+    }
+    for (const exam of exams) {
+      const own = chapters.filter(c => c.exam_id === exam.id);
+      const statusScore = { not_started: 0, learning: 35, revising: 70, mastered: 100 };
+      const coverage = own.length ? Math.round(own.reduce((sum, c) => sum + (statusScore[c.status] || 0), 0) / own.length) : null;
+      const subjectNames = new Set(own.map(c => c.subject));
+      let questions = 0, correct = 0;
+      for (const subject of subjectNames) {
+        const item = practiceBySubject.get(subject);
+        if (item) { questions += item.questions; correct += item.correct; }
+      }
+      const accuracy = questions ? Math.round(correct / questions * 100) : null;
+      const readiness = coverage === null ? null : accuracy === null ? coverage : Math.round(coverage * 0.7 + accuracy * 0.3);
+      const date = new Date(String(exam.exam_date) + "T00:00:00");
+      const days = Math.ceil((date - today) / 86400000);
+      const card = make("article", "hub-row");
+      const top = make("div", "hub-row-top");
+      const copy = make("div");
+      copy.append(make("div", "hub-row-title", exam.name));
+      copy.append(make("div", "hub-row-meta", (days < 0 ? "Date passed" : days === 0 ? "Exam today" : days + " day(s) away") + " · " + own.length + " chapter(s)"));
+      top.append(copy, make("span", "pill", readiness === null ? "No chapter data" : readiness + "% estimate"));
+      card.append(top);
+      const metrics = make("div", "hub-metrics");
+      const metric = (value, label) => { const m = make("div", "hub-metric"); m.append(make("strong", "", value), make("span", "", label)); return m; };
+      metrics.append(metric(coverage === null ? "—" : coverage + "%", "Chapter progress"), metric(accuracy === null ? "—" : accuracy + "%", "Practice accuracy (30 days)"), metric(own.filter(c => c.status === "mastered").length + "/" + own.length, "Mastered chapters"));
+      card.append(metrics);
+      card.append(make("p", "hub-muted", accuracy === null ? "Estimate uses chapter status only because there are no recent practice logs for these subjects." : "Estimate combines chapter status (70%) and recorded accuracy in the same subjects over the past 30 days (30%). It is a planning aid, not an exam-score prediction."));
+      out.append(card);
+    }
+  }
+
+  function formatDate(value) {
+    if (!value) return "not scheduled";
+    const date = new Date(String(value) + "T00:00:00");
+    return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  }
+  function renderRevisions() {
+    const out = $("hubRevisionQueue");
+    out.replaceChildren();
+    const all = cache.revisions.slice().sort((a, b) => {
+      const ad = !a.next_review_on ? "0000-00-00" : a.next_review_on;
+      const bd = !b.next_review_on ? "0000-00-00" : b.next_review_on;
+      return ad.localeCompare(bd);
+    }).slice(0, 12);
+    if (!all.length) {
+      out.append(make("p", "hub-empty", "No chapters yet. Add a chapter to an exam to create your first review card."));
+      return;
+    }
+    for (const item of all) {
+      const row = make("article", "hub-row");
+      const top = make("div", "hub-row-top");
+      const info = make("div");
+      info.append(make("div", "hub-row-title", item.title));
+      info.append(make("div", "hub-row-meta", item.subject + " · " + item.exam_name));
+      const today = new Date().toISOString().slice(0, 10);
+      const dateLabel = !item.next_review_on ? "New · review when ready" : item.next_review_on < today ? "Overdue · " + formatDate(item.next_review_on) : item.next_review_on === today ? "Due today" : "Next review · " + formatDate(item.next_review_on);
+      top.append(info, make("span", "pill", dateLabel));
+      row.append(top);
+      const actions = make("div", "hub-row-actions");
+      for (const [rating, label] of [["again","Again · 1d"],["hard","Hard"],["good","Good"],["easy","Easy"]]) {
+        const button = make("button", rating === "good" ? "" : "hub-btn-secondary", label);
+        button.type = "button";
+        button.disabled = pendingReview;
+        button.addEventListener("click", async () => {
+          pendingReview = true;
+          $("hubRevisionMessage").textContent = "Saving review…";
+          try {
+            const result = await safeApi("/api/revisions", { method: "POST", body: JSON.stringify({ chapter_id: item.chapter_id, rating }) });
+            $("hubRevisionMessage").textContent = "Next review: " + formatDate(result.next_review_on) + " (" + result.interval_days + " day(s)).";
+            $("hubRevisionMessage").className = "hub-error hub-success";
+            await refreshData();
+          } catch (error) {
+            $("hubRevisionMessage").textContent = error.message;
+            $("hubRevisionMessage").className = "hub-error";
+          } finally {
+            pendingReview = false;
+          }
+        });
+        actions.append(button);
+      }
+      row.append(actions);
+      out.append(row);
+    }
+    if (cache.revisions.length > 12) out.append(make("p", "hub-muted", "Showing 12 of " + cache.revisions.length + " chapters. Review older entries in the exam chapter list."));
+  }
+
+  function renderLibrary() {
+    const out = $("hubLibraryItems");
+    out.replaceChildren();
+    if (!cache.library.length) {
+      out.append(make("p", "hub-empty", "Your library is empty. Save a note, formula, definition, or doubt above."));
+      return;
+    }
+    for (const item of cache.library) {
+      const row = make("article", "hub-row");
+      const top = make("div", "hub-row-top");
+      const info = make("div");
+      info.append(make("div", "hub-row-title", item.title));
+      const context = [item.subject, item.textbook, item.book_part, item.chapter_title].filter(Boolean).join(" · ");
+      info.append(make("div", "hub-row-meta", context || "No book/chapter specified"));
+      top.append(info, make("span", "pill", String(item.item_type || "note")));
+      row.append(top);
+      row.append(make("p", "hub-library-content", item.content));
+      const actions = make("div", "hub-row-actions");
+      const remove = make("button", "hub-btn-secondary", "Delete item");
+      remove.type = "button";
+      remove.addEventListener("click", async () => {
+        if (!window.confirm("Delete this study-library item?")) return;
+        remove.disabled = true;
+        try {
+          await safeApi("/api/library/" + encodeURIComponent(item.id), { method: "DELETE" });
+          cache.library = cache.library.filter(value => value.id !== item.id);
+          renderLibrary();
+        } catch (error) {
+          $("hubLibraryMessage").textContent = error.message;
+          remove.disabled = false;
+        }
+      });
+      actions.append(remove);
+      row.append(actions);
+      out.append(row);
+    }
+  }
+
+  function renderMetricsSummary() {
+    renderReadiness();
+    renderRevisions();
+    renderLibrary();
+  }
+  async function refreshData() {
+    if (loading || appPanel.hidden) return;
+    loading = true;
+    const requests = await Promise.allSettled([
+      safeApi("/api/exams"), safeApi("/api/practice"), safeApi("/api/flashcards"),
+      safeApi("/api/tasks"), safeApi("/api/revisions"), safeApi("/api/library"), safeApi("/api/profile")
+    ]);
+    loading = false;
+    const keys = ["exams","practice","flashcards","tasks","revisions","library","profile"];
+    const errors = [];
+    requests.forEach((result, index) => {
+      if (result.status === "fulfilled") {
+        const value = result.value;
+        if (keys[index] === "exams") { cache.exams = value.exams || []; cache.chapters = value.chapters || []; }
+        if (keys[index] === "practice") cache.practice = value.practice || [];
+        if (keys[index] === "flashcards") cache.flashcards = value.flashcards || [];
+        if (keys[index] === "tasks") cache.tasks = value.tasks || [];
+        if (keys[index] === "revisions") cache.revisions = value.reviews || [];
+        if (keys[index] === "library") cache.library = value.items || [];
+        if (keys[index] === "profile") cache.profile = value.profile || null;
+      } else {
+        errors.push(keys[index] + ": " + result.reason.message);
+      }
+    });
+    if (cache.profile && Number(cache.profile.grade) >= 6 && Number(cache.profile.grade) <= 10) {
+      $("hubGrade").value = String(cache.profile.grade);
+      $("hubLibraryGrade").value = String(cache.profile.grade);
+    }
+    renderMetricsSummary();
+    $("hubReadinessMessage").textContent = errors.filter(e => e.startsWith("exams:")).join(" ");
+    const revisionError = errors.find(e => e.startsWith("revisions:"));
+    $("hubRevisionMessage").textContent = revisionError || "";
+    const libraryError = errors.find(e => e.startsWith("library:"));
+    $("hubLibraryMessage").textContent = libraryError || "";
+  }
+
+  $("hubPracticeForm").addEventListener("submit", async event => {
+    event.preventDefault();
+    const button = $("hubGeneratePractice");
+    button.disabled = true;
+    $("hubPracticeMessage").textContent = "Generating original questions…";
+    $("hubPracticeMessage").className = "hub-error";
+    $("hubGeneratedPractice").hidden = true;
+    try {
+      const data = await safeApi("/api/practice/generate", { method: "POST", body: JSON.stringify({
+        grade: Number($("hubGrade").value), subject: $("hubSubject").value,
+        chapter: $("hubChapter").value.trim(), type: $("hubQuestionType").value,
+        count: Number($("hubQuestionCount").value), context: $("hubContext").value.trim()
+      })});
+      $("hubGeneratedPractice").textContent = data.practice;
+      $("hubGeneratedPractice").hidden = false;
+      $("hubPracticeMessage").textContent = data.source_grounded ? "Generated using the lesson excerpt you supplied." : "General practice generated without textbook context; check it against your syllabus.";
+      $("hubPracticeMessage").className = "hub-error" + (data.source_grounded ? " hub-success" : "");
+    } catch (error) {
+      $("hubPracticeMessage").textContent = error.message;
+    } finally { button.disabled = false; }
+  });
+
+  $("hubLibraryForm").addEventListener("submit", async event => {
+    event.preventDefault();
+    const button = $("hubSaveLibrary");
+    button.disabled = true;
+    $("hubLibraryMessage").textContent = "Saving…";
+    try {
+      await safeApi("/api/library", { method: "POST", body: JSON.stringify({
+        grade: Number($("hubLibraryGrade").value), subject: $("hubLibrarySubject").value,
+        textbook: $("hubTextbook").value.trim(), book_part: $("hubBookPart").value.trim(),
+        chapter_title: $("hubLibraryChapter").value.trim(), item_type: $("hubItemType").value,
+        title: $("hubLibraryTitle").value.trim(), content: $("hubLibraryContent").value.trim()
+      })});
+      $("hubLibraryTitle").value = "";
+      $("hubLibraryContent").value = "";
+      $("hubLibraryMessage").textContent = "Saved to your personal study library.";
+      $("hubLibraryMessage").className = "hub-error hub-success";
+      const data = await safeApi("/api/library");
+      cache.library = data.items || [];
+      renderLibrary();
+    } catch (error) {
+      $("hubLibraryMessage").textContent = error.message;
+      $("hubLibraryMessage").className = "hub-error";
+    } finally { button.disabled = false; }
+  });
+
+  function csvEscape(value) {
+    return '"' + String(value == null ? "" : value).replace(/"/g, '""') + '"';
+  }
+  $("hubDownloadSummary").addEventListener("click", async () => {
+    const button = $("hubDownloadSummary");
+    button.disabled = true;
+    try {
+      if (!cache.exams.length && !cache.tasks.length && !cache.practice.length) await refreshData();
+      const today = new Date().toLocaleDateString();
+      const mastered = cache.chapters.filter(c => c.status === "mastered").length;
+      const taskDone = cache.tasks.filter(t => t.done || Number(t.completed) === 1).length;
+      const questions = cache.practice.reduce((sum, p) => sum + (Number(p.questions) || 0), 0);
+      const correct = cache.practice.reduce((sum, p) => sum + (Number(p.correct) || 0), 0);
+      const rows = [
+        ["StudySense student progress summary"], ["Generated", today],
+        ["Class", cache.profile ? cache.profile.grade : ""],
+        ["Exams", cache.exams.length], ["Chapters tracked", cache.chapters.length],
+        ["Chapters mastered", mastered], ["Tasks completed", taskDone + "/" + cache.tasks.length],
+        ["Practice questions logged", questions], ["Practice accuracy", questions ? Math.round(correct / questions * 100) + "%" : "No practice logged"],
+        [], ["Exam", "Date", "Chapters", "Chapter readiness"],
+        ...cache.exams.map(exam => {
+          const own = cache.chapters.filter(c => c.exam_id === exam.id);
+          const values = { not_started: 0, learning: 35, revising: 70, mastered: 100 };
+          const score = own.length ? Math.round(own.reduce((n,c)=>n+(values[c.status]||0),0)/own.length) + "%" : "No chapter data";
+          return [exam.name, exam.exam_date, own.length, score];
+        }),
+        [], ["This report is a voluntary local export. It is not sent to a parent or teacher automatically."]
+      ];
+      const csv = rows.map(row => row.map(csvEscape).join(",")).join("\r\n");
+      const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "studysense-progress-" + new Date().toISOString().slice(0,10) + ".csv";
+      document.body.append(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      $("hubReadinessMessage").textContent = "Progress summary downloaded. Share it only with someone you trust.";
+      $("hubReadinessMessage").className = "hub-error hub-success";
+    } catch (error) {
+      $("hubReadinessMessage").textContent = error.message || "Could not create the summary.";
+    } finally { button.disabled = false; }
+  });
+
+  const observer = new MutationObserver(() => {
+    if (!appPanel.hidden) refreshData().catch(error => {
+      $("hubReadinessMessage").textContent = error.message || "Could not load study tools.";
+    });
+  });
+  observer.observe(appPanel, { attributes: true, attributeFilter: ["hidden"] });
+  if (!appPanel.hidden) refreshData().catch(() => {});
+})();
