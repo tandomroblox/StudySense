@@ -97,7 +97,6 @@ async function send(type, payload) {
 }
 async function refresh() {
   $("refresh").disabled = true;
-  try { await send("refresh"); } catch (_) {}
   const data = await chrome.storage.local.get([
     "restrictedDomains", "trackedDomains", "trackMode", "phase", "usedSeconds",
     "phaseEndsAt", "usageByDay", "enabled", "notificationsEnabled"
@@ -178,12 +177,14 @@ $("save").addEventListener("click", async () => {
       const allowed = hasAll || await chrome.permissions.request({ origins: ["http://*/*", "https://*/*"] });
       if (!allowed) throw new Error("All-site permission was not granted. Nothing was changed.");
     } else {
+      const origins = restrictedDomains.flatMap(domain => ["http://" + domain + "/*", "https://" + domain + "/*", "http://*." + domain + "/*", "https://*." + domain + "/*"]);
+      const alreadyAllowed = await chrome.permissions.contains({ origins });
+      const allowed = alreadyAllowed || await chrome.permissions.request({ origins });
+      if (!allowed) throw new Error("Website permission was not granted. Nothing was changed.");
+      // Drop broad all-site access only after selected-site access is secured.
       if (current.trackMode === "all") {
         await chrome.permissions.remove({ origins: ["http://*/*", "https://*/*"] });
       }
-      const origins = restrictedDomains.flatMap(domain => ["http://" + domain + "/*", "https://" + domain + "/*", "http://*." + domain + "/*", "https://*." + domain + "/*"]);
-      const allowed = await chrome.permissions.request({ origins });
-      if (!allowed) throw new Error("Website permission was not granted. Nothing was changed.");
     }
     await send("configure", { settings: { restrictedDomains, trackMode, notificationsEnabled: $("notificationsEnabled").checked } });
     $("message").textContent = "Saved. Site totals stay in this browser profile.";
@@ -202,7 +203,11 @@ $("pause").addEventListener("click", async () => {
   } catch (error) { $("message").textContent = error.message; }
   finally { $("pause").disabled = false; }
 });
-$("refresh").addEventListener("click", () => refresh().catch(error => { $("message").textContent = error.message; }));
+$("refresh").addEventListener("click", async () => {
+  $("refresh").disabled = true;
+  try { await send("refresh"); await refresh(); }
+  catch (error) { $("message").textContent = error.message; $("refresh").disabled = false; }
+});
 $("clear").addEventListener("click", async () => {
   if (!window.confirm("Clear all locally stored site usage history and reset today's restricted-site allowance?")) return;
   $("clear").disabled = true;
