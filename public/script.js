@@ -170,6 +170,7 @@ if (googleStatus && googleMessages[googleStatus]) {
 }
 
 function showSignedOut(message = "") {
+  document.body.classList.remove("is-signed-in");
   authPanel.hidden = false;
   appPanel.hidden = true;
   connectGoogleButton.hidden = true;
@@ -177,6 +178,7 @@ function showSignedOut(message = "") {
   tasks = [];
 }
 function showSignedIn(user) {
+  document.body.classList.add("is-signed-in");
   authPanel.hidden = true;
   appPanel.hidden = false;
   connectGoogleButton.hidden = false;
@@ -439,10 +441,8 @@ start();
 
 // Register the offline app shell. API responses and account data are never cached.
 if ("serviceWorker" in navigator && window.isSecureContext) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js").catch(error => {
-      console.warn("StudySense offline support could not be enabled:", error);
-    });
+  navigator.serviceWorker.register("/sw.js").catch(error => {
+    console.warn("StudySense offline support could not be enabled:", error);
   });
 }
 
