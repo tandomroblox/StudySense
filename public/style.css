@@ -110,7 +110,8 @@ footer { text-align: center; color: #707b98; font-size: 12px; padding: 32px 0; }
 .exam-center form input, .exam-center form select { display: block; }
 .exam-stats { margin: 16px 0 22px; }
 .exam-stats .card { padding: 16px; }
-.focus-tools { margin-top: 20px; }
+.focus-tools { margin-top: 12px; margin-bottom: 0; }
+.focus-tools + .planner { margin-top: 0; }
 .focus-clock { font-size: clamp(36px, 8vw, 56px); font-weight: 800; letter-spacing: -2px; text-align: center; font-variant-numeric: tabular-nums; margin: 18px 0; }
 .focus-controls { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; }
 .focus-controls button { min-width: 96px; }
