@@ -6,32 +6,42 @@ import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const read = file => fs.readFileSync(path.join(root, file), "utf8");
 const requiredFiles = [
-  "src/index.js", "wrangler.jsonc", "public/index.html", "public/style.css",
+  "src/index.js", "wrangler.jsonc", "public/index.html", "public/app-shell.html",
+  "public/app-shell.js", "public/planner.html", "public/exams.html", "public/syllabus.html",
+  "public/learn.html", "public/library.html", "public/profile.html", "public/style.css",
   "public/script.js", "public/syllabus.js", "public/sw.js", "public/study-tools.js",
-  "public/study-tools.css", "browser-extension/manifest.json",
+  "public/study-tools.css", "tests/pages.test.mjs", "browser-extension/manifest.json",
   "browser-extension/background.js", "browser-extension/popup.html",
   "browser-extension/popup.css", "browser-extension/popup.js",
   "migrations/0005_profiles.sql", "migrations/0006_revision_library.sql"
 ];
 for (const file of requiredFiles) assert.ok(fs.existsSync(path.join(root, file)), `Missing required file: ${file}`);
 
-const html = read("public/index.html");
-const ids = [...html.matchAll(/\bid=["']([^"']+)["']/g)].map(match => match[1]);
+const shellHtml = read("public/app-shell.html");
+const ids = [...shellHtml.matchAll(/\\bid=["']([^"']+)["']/g)].map(match => match[1]);
 const idSet = new Set();
 const duplicates = [];
 for (const id of ids) {
   if (idSet.has(id)) duplicates.push(id);
   idSet.add(id);
 }
-assert.deepEqual(duplicates, [], "index.html must not contain duplicate IDs");
+assert.deepEqual(duplicates, [], "Shared app shell must not contain duplicate IDs");
 
-for (const match of html.matchAll(/<(?:script|link)\b[^>]*\b(?:src|href)=["']([^"']+)["'][^>]*>/gi)) {
-  const uri = match[1];
-  if (/^(?:https?:|data:|#|mailto:|javascript:)/i.test(uri)) continue;
-  const pathname = new URL(uri, "https://studysense.invalid").pathname;
-  if (pathname.startsWith("/api/")) continue;
-  const asset = path.join(root, "public", pathname.replace(/^\//, ""));
-  assert.ok(fs.existsSync(asset), `Broken local asset reference in index.html: ${uri}`);
+const pageFiles = [
+  "public/index.html", "public/planner.html", "public/exams.html",
+  "public/syllabus.html", "public/learn.html", "public/library.html", "public/profile.html",
+  "public/app-shell.html"
+];
+for (const htmlPath of pageFiles) {
+  const html = read(htmlPath);
+  for (const match of html.matchAll(/<(?:script|link|img)\\b[^>]*\\b(?:src|href)=["']([^"']+)["'][^>]*>/gi)) {
+    const uri = match[1];
+    if (/^(?:https?:|data:|#|mailto:|javascript:)/i.test(uri)) continue;
+    const pathname = new URL(uri, "https://studysense.invalid").pathname;
+    if (pathname.startsWith("/api/")) continue;
+    const asset = path.join(root, "public", pathname.replace(/^\\//, ""));
+    assert.ok(fs.existsSync(asset), `Broken local asset reference in ${htmlPath}: ${uri}`);
+  }
 }
 
 const wrangler = JSON.parse(read("wrangler.jsonc"));
