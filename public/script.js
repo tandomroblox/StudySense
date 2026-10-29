@@ -170,7 +170,21 @@ if (googleStatus && googleMessages[googleStatus]) {
   window.history.replaceState({}, "", window.location.pathname);
 }
 
+function clearSessionHint() {
+  try { localStorage.removeItem("studysense-session-hint"); } catch (_) {}
+  try { sessionStorage.removeItem("studysense-session-user"); } catch (_) {}
+}
+function readSessionHintUser() {
+  try {
+    if (localStorage.getItem("studysense-session-hint") !== "1") return null;
+    const saved = JSON.parse(sessionStorage.getItem("studysense-session-user") || "null");
+    return saved && typeof saved.email === "string" ? saved : { email: "" };
+  } catch (_) {
+    return null;
+  }
+}
 function showSignedOut(message = "") {
+  clearSessionHint();
   authLoadingPanel.hidden = true;
   document.body.classList.remove("is-signed-in");
   authPanel.hidden = false;
@@ -185,7 +199,13 @@ function showSignedIn(user) {
   authPanel.hidden = true;
   appPanel.hidden = false;
   connectGoogleButton.hidden = false;
-  signedInAs.textContent = `Signed in as ${user.email}`;
+  signedInAs.textContent = user && user.email ? `Signed in as ${user.email}` : "Restoring your session…";
+  try {
+    localStorage.setItem("studysense-session-hint", "1");
+    if (user && typeof user.email === "string" && user.email) {
+      sessionStorage.setItem("studysense-session-user", JSON.stringify({ email: user.email }));
+    }
+  } catch (_) {}
 }
 
 authForm.addEventListener("submit", async event => {
@@ -416,27 +436,100 @@ chapterForm.addEventListener("submit",async ev=>{ev.preventDefault();const b=cha
 
 
 const profileForm=document.querySelector("#profileForm"),profileName=document.querySelector("#profileName"),profileGrade=document.querySelector("#profileGrade"),profileSchool=document.querySelector("#profileSchool"),profileGoal=document.querySelector("#profileGoal"),profileMessage=document.querySelector("#profileMessage");
-const tutorForm=document.querySelector("#tutorForm"),tutorSubject=document.querySelector("#tutorSubject"),tutorChapter=document.querySelector("#tutorChapter"),tutorQuestion=document.querySelector("#tutorQuestion"),tutorSubmit=document.querySelector("#tutorSubmit"),tutorMessage=document.querySelector("#tutorMessage"),tutorAnswer=document.querySelector("#tutorAnswer");
+const tutorForm=document.querySelector("#tutorForm"),tutorInput=document.querySelector("#tutorInput"),tutorSubmit=document.querySelector("#tutorSubmit"),tutorMessage=document.querySelector("#tutorMessage"),tutorTranscript=document.querySelector("#tutorTranscript"),tutorGradeLabel=document.querySelector("#tutorGradeLabel");
+let tutorSending=false;
+let tutorConversation=[];
+function appendTutorMessage(role, content, pending=false) {
+  const article=document.createElement("article");
+  article.className="tutor-message "+role+(pending?" is-pending":"");
+  const speaker=document.createElement("span");
+  speaker.className="tutor-speaker";
+  speaker.textContent=role==="user"?"You":"StudySense";
+  const paragraph=document.createElement("p");
+  paragraph.textContent=content;
+  article.append(speaker,paragraph);
+  tutorTranscript.append(article);
+  tutorTranscript.scrollTop=tutorTranscript.scrollHeight;
+  return {article,paragraph};
+}
+function resizeTutorInput() {
+  tutorInput.style.height="auto";
+  tutorInput.style.height=Math.min(tutorInput.scrollHeight,150)+"px";
+}
+function syncTutorGrade() {
+  tutorGradeLabel.textContent=String(Number(profileGrade.value)||9);
+}
+profileGrade.addEventListener("change",syncTutorGrade);
+syncTutorGrade();
+document.querySelectorAll("[data-tutor-prompt]").forEach(button=>button.addEventListener("click",()=>{
+  tutorInput.value=button.dataset.tutorPrompt||"";
+  tutorInput.focus();
+  resizeTutorInput();
+}));
+tutorInput.addEventListener("input",resizeTutorInput);
+tutorInput.addEventListener("keydown",event=>{
+  if(event.key==="Enter"&&!event.shiftKey&&!event.isComposing){
+    event.preventDefault();
+    tutorForm.requestSubmit();
+  }
+});
+async function sendTutorMessage(event) {
+  event.preventDefault();
+  const question=tutorInput.value.trim();
+  if(!question||tutorSending)return;
+  tutorSending=true;
+  tutorSubmit.disabled=true;
+  tutorInput.disabled=true;
+  tutorMessage.textContent="";
+  appendTutorMessage("user",question);
+  const pending=appendTutorMessage("assistant","Thinking…",true);
+  tutorInput.value="";
+  resizeTutorInput();
+  const outgoing=[...tutorConversation,{role:"user",content:question}].slice(-14);
+  try {
+    const response=await api("/api/tutor",{method:"POST",body:JSON.stringify({grade:Number(profileGrade.value)||9,messages:outgoing})});
+    const answer=typeof response.answer==="string"&&response.answer.trim()?response.answer.trim():"I couldn't produce a reply. Please try again.";
+    pending.paragraph.textContent=answer;
+    pending.article.classList.remove("is-pending");
+    tutorConversation=[...outgoing,{role:"assistant",content:answer}].slice(-14);
+  } catch(error) {
+    pending.paragraph.textContent="I couldn't send that just now. "+(error.message||"Please try again.");
+    pending.article.classList.remove("is-pending");
+    pending.article.classList.add("is-error");
+    tutorMessage.textContent="Message not sent. Check your connection and try again.";
+  } finally {
+    tutorSending=false;
+    tutorSubmit.disabled=false;
+    tutorInput.disabled=false;
+    tutorInput.focus();
+    resizeTutorInput();
+  }
+}
+tutorForm.addEventListener("submit",sendTutorMessage);
 async function loadProfile(){try{const d=await api("/api/profile"),p=d.profile||{};profileName.value=p.display_name||"";profileGrade.value=String(p.grade||9);profileSchool.value=p.school||"";profileGoal.value=String(p.daily_goal_minutes||60);document.querySelector("#syllabusClass").value=profileGrade.value;document.querySelector("#curriculumGrade").value=profileGrade.value;renderSyllabusOptions();renderSyllabusBookNote();renderCurriculumLibrary();}catch(e){profileMessage.textContent=e.message;}}
 profileGrade.addEventListener("change",()=>{document.querySelector("#syllabusClass").value=profileGrade.value;document.querySelector("#curriculumGrade").value=profileGrade.value;renderSyllabusOptions();renderSyllabusBookNote();renderCurriculumLibrary();});
 profileForm.addEventListener("submit",async e=>{e.preventDefault();const b=profileForm.querySelector('button[type="submit"]');b.disabled=true;profileMessage.textContent="Saving…";try{await api("/api/profile",{method:"PUT",body:JSON.stringify({display_name:profileName.value.trim(),grade:Number(profileGrade.value),school:profileSchool.value.trim(),daily_goal_minutes:Number(profileGoal.value)})});profileMessage.textContent="Profile saved.";}catch(err){profileMessage.textContent=err.message;}finally{b.disabled=false;}});
-tutorForm.addEventListener("submit",async e=>{e.preventDefault();tutorSubmit.disabled=true;tutorMessage.textContent="Thinking…";tutorAnswer.hidden=true;try{const d=await api("/api/tutor",{method:"POST",body:JSON.stringify({grade:Number(profileGrade.value),subject:tutorSubject.value,chapter:tutorChapter.value.trim(),question:tutorQuestion.value.trim(),context:document.querySelector("#tutorContext").value.trim()})});tutorAnswer.textContent=d.answer||"No answer returned. Please try again.";tutorAnswer.hidden=false;tutorMessage.textContent="AI response · "+(d.model||"StudySense");}catch(err){tutorMessage.textContent=err.message;}finally{tutorSubmit.disabled=false;}});
+
 
 async function start() {
+  const cachedUser = readSessionHintUser();
+  if (cachedUser) showSignedIn(cachedUser);
   try {
     const data = await api("/api/auth/me");
     if (data.user) {
       showSignedIn(data.user);
-      await loadTasks();
-      await loadExams();
-      await loadLearningTools();
-      await loadProfile();
+      await Promise.all([loadTasks(), loadExams(), loadLearningTools(), loadProfile()]);
       if (googleStatus === "linked") taskMessage.textContent = googleMessages.linked;
     } else {
       showSignedOut(googleStatus && googleMessages[googleStatus] ? googleMessages[googleStatus] : "");
     }
   } catch {
-    showSignedOut("Could not connect to StudySense. Refresh the page and try again.");
+    if (cachedUser) {
+      document.querySelector("#connectionStatus").textContent = "CONNECTION ISSUE · SESSION NOT VERIFIED";
+      taskMessage.textContent = "StudySense could not verify the session. Check your connection and refresh; private account data has not been loaded.";
+    } else {
+      showSignedOut("Could not connect to StudySense. Refresh the page and try again.");
+    }
   }
 }
 start();
