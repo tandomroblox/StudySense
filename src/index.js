@@ -343,12 +343,93 @@ export default {
       if(name.length>60||school.length>120||!Number.isInteger(grade)||grade<6||grade>10||!Number.isInteger(goal)||goal<15||goal>600)return json({error:"Check your name, school, class (6–10), and study goal (15–600 minutes)."},400);
       try{await env.DB.prepare("INSERT INTO user_profiles(user_id,display_name,grade,school,daily_goal_minutes,updated_at) VALUES(?,?,?,?,?,datetime('now')) ON CONFLICT(user_id) DO UPDATE SET display_name=excluded.display_name,grade=excluded.grade,school=excluded.school,daily_goal_minutes=excluded.daily_goal_minutes,updated_at=datetime('now')").bind(session.sub,name,grade,school,goal).run();return json({profile:{display_name:name,grade,school,daily_goal_minutes:goal}});}catch{return json({error:"Could not save profile. Check that migration 0005 has been applied."},500);}
     }
-    if(url.pathname==="/api/tutor"&&request.method==="POST"){
-      const session=await readSession(request,env.SESSION_SECRET);if(!session)return json({error:"Please sign in to use the AI tutor."},401);
-      if(!env.AI||typeof env.AI.run!=="function")return json({error:"The AI tutor is not enabled on the live Worker yet. The AI binding must be deployed first."},503);
-      const b=await bodyJson(request),grade=Number(b?.grade),subject=typeof b?.subject==="string"?b.subject.trim():"",chapter=typeof b?.chapter==="string"?b.chapter.trim():"",question=typeof b?.question==="string"?b.question.trim():"",context=typeof b?.context==="string"?b.context.trim():"";
-      if(!Number.isInteger(grade)||grade<6||grade>10||!["Mathematics","Science","Social Science","English","Hindi","Telugu"].includes(subject)||chapter.length>150||!question||question.length>2000||context.length>6000)return json({error:"Choose a class (6–10), a valid subject, and a question under 2,000 characters. Lesson context is limited to 6,000 characters."},400);
-      try{const result=await env.AI.run("@cf/meta/llama-3.1-8b-instruct",{messages:[{role:"system",content:"You are StudySense, a careful school tutor for Indian students in Classes 6–10. Only help with school learning, lesson explanations, worked examples, practice questions, flashcards, and doubt clarification. Stay within the user's subject and class level. Explain step by step in clear age-appropriate language. Do not pretend to have read a textbook or syllabus that was not supplied. If you are unsure or the question depends on a specific textbook, say so and ask for the relevant passage. Never fabricate citations or page numbers. When quizzing, ask one question at a time and wait for the student's answer. For ordinary doubts, answer directly and finish with one short check-your-understanding question. Briefly redirect unrelated requests to school learning."},{role:"user",content:"Student class: "+grade+"\nSubject: "+subject+"\nChapter: "+(chapter||"Not specified")+"\nQuestion: "+question+"\nStudent-provided lesson material (if supplied, use it as source context and do not add unsupported chapter-specific claims):\n"+(context||"(No lesson material provided.)")}],max_tokens:900,temperature:0.2});const answer=typeof result?.response==="string"?result.response:"";if(!answer)return json({error:"The tutor returned an empty response. Please try again."},502);return json({answer,model:"Cloudflare Workers AI"});}catch(error){console.error("StudySense tutor request failed",{name:error instanceof Error?error.name:"UnknownError"});return json({error:"The tutor could not answer right now. Please try again in a moment."},502);}
+    if (url.pathname === "/api/tutor" && request.method === "POST") {
+      const session = await readSession(request, env.SESSION_SECRET);
+      if (!session) return json({ error: "Please sign in to use the AI tutor." }, 401);
+      if (!env.AI || typeof env.AI.run !== "function") {
+        return json({ error: "The AI tutor is not enabled on the live Worker yet. The AI binding must be deployed first." }, 503);
+      }
+
+      const body = await bodyJson(request);
+      const grade = Number(body?.grade);
+      const subject = typeof body?.subject === "string" ? body.subject.trim() : "";
+      const chapter = typeof body?.chapter === "string" ? body.chapter.trim() : "";
+      const question = typeof body?.question === "string" ? body.question.trim() : "";
+      const context = typeof body?.context === "string" ? body.context.trim() : "";
+      const allowedSubjects = ["Mathematics", "Science", "Social Science", "English", "Hindi", "Telugu"];
+      const hasConversation = Array.isArray(body?.messages);
+      let messages = [];
+
+      if (!Number.isInteger(grade) || grade < 6 || grade > 10 ||
+          (subject && !allowedSubjects.includes(subject)) ||
+          chapter.length > 150 || context.length > 6000) {
+        return json({ error: "Choose a valid class (6–10). A supplied subject hint or chapter must be valid, and lesson context is limited to 6,000 characters." }, 400);
+      }
+
+      if (hasConversation) {
+        if (body.messages.length < 1 || body.messages.length > 16) {
+          return json({ error: "Send between 1 and 16 recent chat messages." }, 400);
+        }
+        let totalCharacters = 0;
+        for (const message of body.messages) {
+          if (!message || !["user", "assistant"].includes(message.role) ||
+              typeof message.content !== "string" || !message.content.trim() ||
+              message.content.trim().length > 3000) {
+            return json({ error: "Each chat message must have a valid role and 1–3,000 characters of text." }, 400);
+          }
+          totalCharacters += message.content.trim().length;
+          messages.push({ role: message.role, content: message.content.trim() });
+        }
+        if (messages[messages.length - 1]?.role !== "user") {
+          return json({ error: "The last chat message must be a user message." }, 400);
+        }
+        if (totalCharacters > 12000) {
+          return json({ error: "This chat turn is too long. Start a new conversation or shorten earlier messages." }, 400);
+        }
+      } else {
+        if (!question || question.length > 2000) {
+          return json({ error: "Enter a question under 2,000 characters." }, 400);
+        }
+        const legacyQuestion = [
+          "Student class: " + grade,
+          "Subject hint (if supplied): " + (subject || "Infer the likely subject from the question"),
+          "Chapter hint: " + (chapter || "Not specified"),
+          "Question: " + question,
+          "Student-provided lesson material (if supplied, use it as source context and do not add unsupported chapter-specific claims):",
+          context || "(No lesson material provided.)"
+        ].join("\n");
+        messages = [{ role: "user", content: legacyQuestion }];
+      }
+
+      const systemPrompt = [
+        "You are StudySense, a warm, careful school tutor for Indian students in Classes 6–10.",
+        "Help with school learning: explain concepts, solve problems step by step, quiz the student one question at a time, clarify doubts, and help with revision.",
+        "Infer the likely school subject and topic from the conversation. Do not demand that the student choose a subject; ask a short clarifying question only when the actual question is unclear.",
+        "Use recent user and assistant messages to understand follow-ups and avoid restarting explanations unnecessarily.",
+        "Stay age-appropriate, accurate, concise but useful, and explain terms in accessible language.",
+        "When working through a numerical or maths problem, show the essential steps rather than only giving the answer.",
+        "Do not fabricate textbook citations, page numbers, chapter text, or claims that you searched a PDF library.",
+        "Only claim source-grounded PDF/textbook knowledge when the relevant source passage is actually included in the conversation. This request does not currently retrieve the planned PDF collection automatically. If a question depends on a specific textbook passage that is not provided, say what you can answer generally and ask for the passage to verify specifics.",
+        "For quizzes, ask one question at a time and wait for the student's answer. For ordinary doubts, answer directly and optionally finish with one short check-your-understanding question.",
+        "If the student asks unrelated questions, briefly redirect to school learning."
+      ].join(" ");
+
+      try {
+        const result = await env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
+          messages: [
+            { role: "system", content: systemPrompt + "\nThe student's class is " + grade + "." },
+            ...messages
+          ],
+          max_tokens: 1000,
+          temperature: 0.25
+        });
+        const answer = typeof result?.response === "string" ? result.response.trim() : "";
+        if (!answer) return json({ error: "The tutor returned an empty response. Please try again." }, 502);
+        return json({ answer, model: "Cloudflare Workers AI", subject_inferred: !subject, conversation: hasConversation });
+      } catch (error) {
+        console.error("StudySense tutor request failed", { name: error instanceof Error ? error.name : "UnknownError" });
+        return json({ error: "The tutor could not answer right now. Please try again in a moment." }, 502);
+      }
     }
 
     if (url.pathname === "/api/exams" || url.pathname.startsWith("/api/exams/") || url.pathname === "/api/chapters" || url.pathname.startsWith("/api/chapters/")) {
