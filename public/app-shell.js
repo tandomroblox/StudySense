@@ -95,6 +95,13 @@
   window.addEventListener("beforeinstallprompt", event => {
     event.preventDefault();
     deferredInstallPrompt = event;
+    const existing = root.querySelector("#pwaInstallBanner");
+    if (existing) {
+      const installButton = existing.querySelector(".pwa-install-button");
+      const detail = existing.querySelector(".pwa-install-copy span");
+      if (installButton) installButton.textContent = "Install";
+      if (detail) detail.textContent = "Install the app for a home-screen icon and a focused, app-like window.";
+    }
     mountInstallBanner();
   });
   window.addEventListener("appinstalled", () => {
