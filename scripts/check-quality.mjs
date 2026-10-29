@@ -11,7 +11,7 @@ const requiredFiles = [
   "public/learn.html", "public/library.html", "public/profile.html", "public/time-guard.html",
   "public/time-guard.css", "public/style.css",
   "public/script.js", "public/syllabus.js", "public/sw.js", "public/study-tools.js",
-  "public/study-tools.css", "tests/pages.test.mjs", "browser-extension/manifest.json",
+  "public/study-tools.css", "tests/pages.test.mjs", "tests/tutor-chat.test.mjs", "browser-extension/manifest.json",
   "browser-extension/README.md", "browser-extension/background.js", "browser-extension/popup.html",
   "browser-extension/popup.css", "browser-extension/popup.js", "browser-extension/break.html",
   "browser-extension/break.css", "browser-extension/break.js",
