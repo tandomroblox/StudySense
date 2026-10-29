@@ -37,3 +37,6 @@ body.time-guard-page { background:radial-gradient(ellipse at 50% -8%,#26355e 0%,
 @media(max-width:1120px) { .time-guard-page .topbar { grid-template-columns:auto minmax(0,1fr) auto; } .time-guard-page .topbar > .status { display:none; } }
 @media(max-width:900px) { .time-guard-feature-grid { grid-template-columns:1fr; } .time-guard-page .topbar { grid-template-columns:auto auto; } .time-guard-page .site-nav { grid-column:1/-1; grid-row:2; justify-content:flex-start; overflow-x:auto; } .time-guard-open-app { justify-self:end; } }
 @media(max-width:560px) { .time-guard-page .container { width:92%; } .time-guard-hero { padding:27px 20px; border-radius:18px; } .time-guard-hero h1 { letter-spacing:-1.5px; } .time-guard-actions { display:grid; } .download-button,.source-button { width:100%; } .feature-card { padding:18px; } .privacy-links { display:grid; gap:10px; } }
+
+/* Keep the companion card's content aligned with the hero text. */
+.time-guard-page .companion-connection-card { padding-inline:clamp(20px,5vw,58px); }
