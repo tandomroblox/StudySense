@@ -99,6 +99,29 @@
       const response = await fetch("/app-shell.html", { cache: "no-cache" });
       if (!response.ok) throw new Error("The page layout could not be loaded.");
       root.innerHTML = await response.text();
+      // Paint the app for returning users while the server verifies the signed session.
+      try {
+        if (localStorage.getItem("studysense-session-hint") === "1") {
+          const loading = root.querySelector("#authLoadingPanel");
+          const auth = root.querySelector("#authPanel");
+          const app = root.querySelector("#appPanel");
+          if (loading && auth && app) {
+            loading.hidden = true;
+            auth.hidden = true;
+            app.hidden = false;
+            document.body.classList.add("is-signed-in");
+            let cachedEmail = "";
+            try {
+              const cachedUser = JSON.parse(sessionStorage.getItem("studysense-session-user") || "null");
+              if (cachedUser && typeof cachedUser.email === "string") cachedEmail = cachedUser.email;
+            } catch (_) {}
+            const emailLabel = root.querySelector("#signedInAs");
+            if (emailLabel) emailLabel.textContent = cachedEmail ? "Signed in as " + cachedEmail : "Restoring your session…";
+            const connectButton = root.querySelector("#connectGoogleButton");
+            if (connectButton) connectButton.hidden = !cachedEmail;
+          }
+        }
+      } catch (_) {}
       setupNavigation();
       await loadScript("/syllabus.js");
       await loadScript("/script.js");
