@@ -30,8 +30,8 @@ test("The sign-in form stays hidden until session restoration completes", () => 
 });
 
 test("Session loading state is cleared for both authenticated and signed-out results", () => {
-  const shellScript = read("public/app-shell.js");
-  assert.match(shellScript, /Restoring your study space/);
+  const shellHtml = read("public/app-shell.html");
+  assert.match(shellHtml, /Restoring your study space/);
   const start = source.slice(source.indexOf("async function start()"), source.indexOf("// Focus timer"));
   assert.match(start, /showSignedIn\(data\.user\)/);
   assert.match(start, /showSignedOut\(/);
