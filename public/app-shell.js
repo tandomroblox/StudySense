@@ -2,6 +2,7 @@
   "use strict";
   const root = document.getElementById("appRoot");
   const page = document.body.dataset.page || "dashboard";
+  document.body.classList.add("auth-checking");
   const pageCopy = {
     dashboard: { eyebrow: "YOUR PERSONAL STUDY DASHBOARD", title: "Make today count.", description: "A calm overview of your tasks, exam readiness, and next best step." },
     planner: { eyebrow: "MAKE TIME FOR WHAT MATTERS", title: "Your study planner.", description: "Turn your study goal into a doable plan, then focus on one task at a time." },
