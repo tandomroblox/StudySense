@@ -19,6 +19,7 @@ The routes use `app-shell.html` and `app-shell.js` to mount one shared set of pa
 - Tasks, exams, per-exam chapters, and chapter progress.
 - Curriculum catalogues for Classes 6–10. Exact editions and volume membership are kept explicit; where a school may prescribe different language options, the page includes a note to confirm the booklist.
 - Smart revision scheduling based on a student's review rating.
+- A conversation-style AI tutor that infers the likely subject, keeps recent follow-ups in context, and uses a single message composer instead of a subject form.
 - AI practice questions (MCQ, short-answer, numerical, or mixed) with optional student-provided lesson text.
 - Readiness estimates that combine chapter status with recently recorded practice accuracy when it is available. This is a planning indicator, not an exam-mark prediction.
 - A private study library for notes, formulas, definitions, and doubts organized by class, subject, textbook, part, and chapter.
