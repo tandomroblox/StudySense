@@ -14,6 +14,17 @@
 <p class="hero-copy">Time Guard starts with YouTube, Instagram, TikTok, Reddit, Facebook, X, Twitch, and Netflix already flagged. It adds active time across those sites together, opens a break popup at 15 minutes total, and blocks flagged sites for a 35-minute cooldown.</p>
 <div class="time-guard-actions"><a class="download-button" href="https://github.com/tandomroblox/StudySense/releases/latest/download/StudySense-Time-Guard.zip">Download Time Guard <span>ZIP ↗</span></a><a class="source-button" href="https://github.com/tandomroblox/StudySense/tree/main/browser-extension" target="_blank" rel="noopener noreferrer">View extension source</a></div>
 <p class="fine-print">For Chrome and Microsoft Edge on desktop. This is a manually installed extension, not a Chrome Web Store listing. The download contains the extension files only.</p></section>
+<section class="card companion-connection-card" aria-labelledby="desktopCompanionHeading">
+<p class="eyebrow">DESKTOP COMPANION</p><h2 id="desktopCompanionHeading">Your activity on this device</h2>
+<p id="desktopCompanionStatus" role="status" aria-live="polite">Checking connection…</p>
+<p id="desktopCompanionDetail">Your local app and website totals will appear here when the Desktop Companion is connected.</p>
+<div class="activity-columns">
+<div><h3>Most-used apps today</h3><ul id="desktopAppUsage"><li>Waiting for connection…</li></ul></div>
+<div><h3>Most-used websites today</h3><ul id="desktopWebsiteUsage"><li>Waiting for connection…</li></ul></div>
+</div>
+<button id="desktopCompanionRefresh" class="source-button" type="button">Refresh activity</button>
+<p class="fine-print">This section reads activity stored locally by the Desktop Companion through the installed extension. It does not upload your history to this website. Cloud reporting requires separate setup and clear user notice.</p>
+</section>
 <section class="time-guard-feature-grid" aria-label="Time Guard features">
 <article class="card feature-card"><span class="feature-icon" aria-hidden="true">◷</span><h2>15-minute allowance</h2><p>Choose restricted websites. Their tracked time counts toward the allowance; when it runs out, those sites are blocked for a 35-minute cooldown.</p></article>
 <article class="card feature-card"><span class="feature-icon" aria-hidden="true">▥</span><h2>Useful reports</h2><p>See tracked time today, the last seven days, most-used sites, recent daily history, and export your totals as CSV.</p></article>
@@ -28,5 +39,5 @@
 <p>Time Guard uses the browser tab permission to identify active hostnames, so it does not request per-site access when you customize the list. All-websites mode records hostnames and time totals—not page text, page titles, search terms, form entries, or keystrokes. The browser's normal extension-install permission notice still applies.</p>
 <p>Time is estimated from the active tab while the browser window is focused, so browser throttling or sleep can make totals imperfect. Time Guard cannot monitor native desktop apps, other browsers, or activity while it is paused or removed. It is a self-management aid, not tamper-proof parental control. Incognito monitoring is not enabled by default.</p>
 <div class="privacy-links"><a href="https://github.com/tandomroblox/StudySense/blob/main/README.md#browser-extension-time-guard" target="_blank" rel="noopener noreferrer">Full privacy and usage notes</a><a href="https://github.com/tandomroblox/StudySense/tree/main/browser-extension" target="_blank" rel="noopener noreferrer">Inspect the source code</a></div></section>
-</main><footer>StudySense Time Guard · Private browser-time reports · <a href="/index.html">Back to StudySense</a></footer>
+</main><script src="/time-guard-connection.js" defer></script><footer>StudySense Time Guard · Private browser-time reports · <a href="/index.html">Back to StudySense</a></footer>
 </body></html>
