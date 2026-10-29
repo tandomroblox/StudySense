@@ -80,6 +80,7 @@ if (curriculumGrade) {
   renderCurriculumLibrary();
 }
 
+const authLoadingPanel = document.querySelector("#authLoadingPanel");
 const authPanel = document.querySelector("#authPanel");
 const appPanel = document.querySelector("#appPanel");
 const authForm = document.querySelector("#authForm");
@@ -170,7 +171,8 @@ if (googleStatus && googleMessages[googleStatus]) {
 }
 
 function showSignedOut(message = "") {
-  document.body.classList.remove("is-signed-in");
+  document.body.classList.remove("is-signed-in", "auth-checking");
+  authLoadingPanel.hidden = true;
   authPanel.hidden = false;
   appPanel.hidden = true;
   connectGoogleButton.hidden = true;
@@ -178,7 +180,9 @@ function showSignedOut(message = "") {
   tasks = [];
 }
 function showSignedIn(user) {
+  document.body.classList.remove("auth-checking");
   document.body.classList.add("is-signed-in");
+  authLoadingPanel.hidden = true;
   authPanel.hidden = true;
   appPanel.hidden = false;
   connectGoogleButton.hidden = false;
