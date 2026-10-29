@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "StudySense Time Guard",
-  "version": "1.2.1",
-  "description": "Automatically tracks common entertainment sites locally, with a 15-minute combined allowance, break popup, and 35-minute cooldown.",
+  "version": "1.3.0",
+  "description": "Tracks local browser usage and can show its connection status on the StudySense Time Guard website.",
   "permissions": [
     "storage",
     "tabs",
@@ -10,9 +10,23 @@
     "declarativeNetRequest",
     "notifications"
   ],
+  "host_permissions": [
+    "https://studysense.studysenseapp.workers.dev/*"
+  ],
   "background": {
     "service_worker": "background.js"
   },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://studysense.studysenseapp.workers.dev/*"
+      ],
+      "js": [
+        "website-bridge.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
   "action": {
     "default_title": "StudySense Time Guard",
     "default_popup": "popup.html",

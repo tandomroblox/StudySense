@@ -37,3 +37,12 @@ body.time-guard-page { background:radial-gradient(ellipse at 50% -8%,#26355e 0%,
 @media(max-width:1120px) { .time-guard-page .topbar { grid-template-columns:auto minmax(0,1fr) auto; } .time-guard-page .topbar > .status { display:none; } }
 @media(max-width:900px) { .time-guard-feature-grid { grid-template-columns:1fr; } .time-guard-page .topbar { grid-template-columns:auto auto; } .time-guard-page .site-nav { grid-column:1/-1; grid-row:2; justify-content:flex-start; overflow-x:auto; } .time-guard-open-app { justify-self:end; } }
 @media(max-width:560px) { .time-guard-page .container { width:92%; } .time-guard-hero { padding:27px 20px; border-radius:18px; } .time-guard-hero h1 { letter-spacing:-1.5px; } .time-guard-actions { display:grid; } .download-button,.source-button { width:100%; } .feature-card { padding:18px; } .privacy-links { display:grid; gap:10px; } }
+
+
+/* Desktop Companion connection status */
+.companion-connection-card { margin: 1.25rem 0 2rem; }
+.companion-connection-card h2 { margin-bottom: .5rem; }
+#desktopCompanionStatus { font-weight: 700; margin: .75rem 0 .35rem; }
+#desktopCompanionDetail { color: var(--muted, #aab2c8); }
+#desktopCompanionRefresh { cursor: pointer; margin-top: .5rem; }
+#desktopCompanionRefresh:disabled { opacity: .6; cursor: wait; }
