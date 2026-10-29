@@ -34,6 +34,73 @@
   }
 
   let closeAccountMenu = () => {};
+  let deferredInstallPrompt = null;
+  let installBannerDismissed = false;
+
+  const isStandaloneApp = () =>
+    window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+
+  function mountInstallBanner() {
+    if (!root || isStandaloneApp() || installBannerDismissed || root.querySelector("#pwaInstallBanner")) return;
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (!deferredInstallPrompt && !isMobile) return;
+
+    const banner = document.createElement("aside");
+    banner.id = "pwaInstallBanner";
+    banner.className = "pwa-install-banner";
+    banner.setAttribute("aria-label", "Install StudySense");
+    const copy = document.createElement("div");
+    copy.className = "pwa-install-copy";
+    const heading = document.createElement("strong");
+    heading.textContent = "Take StudySense with you";
+    const detail = document.createElement("span");
+    detail.textContent = deferredInstallPrompt
+      ? "Install the app for a home-screen icon and a focused, app-like window."
+      : /iPhone|iPad|iPod/i.test(navigator.userAgent)
+        ? "On iPhone/iPad, use Share → Add to Home Screen."
+        : "In your browser menu, choose Install app or Add to Home screen.";
+    copy.append(heading, detail);
+    const actions = document.createElement("div");
+    actions.className = "pwa-install-actions";
+    const install = document.createElement("button");
+    install.type = "button";
+    install.className = "pwa-install-button";
+    install.textContent = deferredInstallPrompt ? "Install" : "How?";
+    install.addEventListener("click", async () => {
+      if (!deferredInstallPrompt) {
+        detail.textContent = /iPhone|iPad|iPod/i.test(navigator.userAgent)
+          ? "Tap Share in Safari, then choose Add to Home Screen → Add."
+          : "Open ⋮ in Chrome, then choose Install app or Add to Home screen.";
+        return;
+      }
+      const promptEvent = deferredInstallPrompt;
+      deferredInstallPrompt = null;
+      promptEvent.prompt();
+      try { await promptEvent.userChoice; } catch (_) {}
+      banner.remove();
+    });
+    const dismiss = document.createElement("button");
+    dismiss.type = "button";
+    dismiss.className = "pwa-install-dismiss";
+    dismiss.setAttribute("aria-label", "Dismiss install suggestion");
+    dismiss.textContent = "×";
+    dismiss.addEventListener("click", () => { installBannerDismissed = true; banner.remove(); });
+    actions.append(install, dismiss);
+    banner.append(copy, actions);
+    const topbar = root.querySelector(".topbar");
+    if (topbar) topbar.insertAdjacentElement("afterend", banner);
+    else root.prepend(banner);
+  }
+
+  window.addEventListener("beforeinstallprompt", event => {
+    event.preventDefault();
+    deferredInstallPrompt = event;
+    mountInstallBanner();
+  });
+  window.addEventListener("appinstalled", () => {
+    deferredInstallPrompt = null;
+    root.querySelector("#pwaInstallBanner")?.remove();
+  });
 
   function renderPage(nextPage) {
     if (!pageCopy[nextPage]) return;
@@ -99,6 +166,7 @@
       const response = await fetch("/app-shell.html", { cache: "no-cache" });
       if (!response.ok) throw new Error("The page layout could not be loaded.");
       root.innerHTML = await response.text();
+      mountInstallBanner();
       // Paint the app for returning users while the server verifies the signed session.
       try {
         if (localStorage.getItem("studysense-session-hint") === "1") {
