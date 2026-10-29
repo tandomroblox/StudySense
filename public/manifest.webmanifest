@@ -1,7 +1,7 @@
 {
   "name": "StudySense",
   "short_name": "StudySense",
-  "description": "Your personal study planner.",
+  "description": "StudySense — plan exams, track chapters, revise, and learn with your personal study workspace.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -19,6 +19,44 @@
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "maskable"
+    }
+  ],
+  "id": "/",
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
+  "categories": [
+    "education",
+    "productivity"
+  ],
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {
+      "name": "Study planner",
+      "short_name": "Planner",
+      "description": "Open your daily study plan",
+      "url": "/planner.html",
+      "icons": [
+        {
+          "src": "/icon.svg",
+          "sizes": "any",
+          "type": "image/svg+xml"
+        }
+      ]
+    },
+    {
+      "name": "Learn and revise",
+      "short_name": "Learn",
+      "description": "Practice, revise, and use your AI tutor",
+      "url": "/learn.html",
+      "icons": [
+        {
+          "src": "/icon.svg",
+          "sizes": "any",
+          "type": "image/svg+xml"
+        }
+      ]
     }
   ]
 }

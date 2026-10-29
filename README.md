@@ -28,6 +28,17 @@ The routes use `app-shell.html` and `app-shell.js` to mount one shared set of pa
 
 Generated AI practice is original practice material, not a claim of official NCERT/CBSE questions. When textbook-specific accuracy matters, add the relevant lesson excerpt and verify generated material against the prescribed book and teacher's syllabus.
 
+## Android install (PWA)
+
+StudySense is installable on Android as a Progressive Web App (PWA), so you can use the same website, account, and backend without setting up Android Studio or maintaining a second native codebase. The app manifest includes standalone display metadata and shortcuts to Planner and Learn; the service worker caches the public app shell for offline navigation. API calls and private account data are intentionally never cached.
+
+1. Open https://studysense.studysenseapp.workers.dev/ in Chrome on Android.
+2. Sign in, then tap **Install** in the StudySense install suggestion when it appears. If it does not appear, open Chrome's **⋮** menu and choose **Install app** or **Add to Home screen**.
+3. Launch StudySense from the new home-screen icon. It opens in its own app-like window.
+4. The same account works on the website and Android because both use the same backend. An internet connection is still required for sign-in, saving, AI tutor requests, and other API-backed features.
+
+On iPhone/iPad, open the site in Safari, tap **Share**, then **Add to Home Screen**. PWA installation is not an APK; native Android-only features such as app-usage monitoring and blocking are not provided by the website install.
+
 ## Browser extension: Time Guard
 
 The optional extension lives in `browser-extension/` and supports Chrome/Edge MV3-compatible browsers.
