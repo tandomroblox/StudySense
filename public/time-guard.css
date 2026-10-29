@@ -39,4 +39,4 @@ body.time-guard-page { background:radial-gradient(ellipse at 50% -8%,#26355e 0%,
 @media(max-width:560px) { .time-guard-page .container { width:92%; } .time-guard-hero { padding:27px 20px; border-radius:18px; } .time-guard-hero h1 { letter-spacing:-1.5px; } .time-guard-actions { display:grid; } .download-button,.source-button { width:100%; } .feature-card { padding:18px; } .privacy-links { display:grid; gap:10px; } }
 
 /* Keep the companion card's content aligned with the hero text. */
-.time-guard-page .companion-connection-card { padding-inline:clamp(20px,5vw,58px); }
+.time-guard-page .companion-connection-card.card { padding-left:clamp(20px,5vw,58px) !important; padding-right:clamp(20px,5vw,58px) !important; }
