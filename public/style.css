@@ -382,3 +382,27 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
   .tutor-card .tutor-composer button { width:40px; height:40px; flex-basis:40px; }
   .tutor-starters button { flex:1 1 auto; }
 }
+
+
+/* Mobile PWA install suggestion */
+.pwa-install-banner {
+  display:flex; align-items:center; justify-content:space-between; gap:16px;
+  width:min(1080px,92%); margin:12px auto 0; padding:13px 15px;
+  border:1px solid #8b9cff45; border-radius:14px;
+  background:linear-gradient(115deg,#172544,#111a31); color:#eaf0ff;
+  box-shadow:0 10px 28px #0002;
+}
+.pwa-install-copy { display:flex; flex-direction:column; gap:4px; min-width:0; }
+.pwa-install-copy strong { font-size:14px; }
+.pwa-install-copy span { color:#b8c5e5; font-size:12px; line-height:1.5; }
+.pwa-install-actions { display:flex; align-items:center; gap:8px; flex-shrink:0; }
+.pwa-install-button,.pwa-install-dismiss { border:0; cursor:pointer; border-radius:9px; min-height:36px; font:inherit; font-size:13px; font-weight:800; }
+.pwa-install-button { padding:8px 13px; background:#9cafff; color:#10182d; }
+.pwa-install-dismiss { width:34px; padding:0; background:#ffffff10; color:#dce5ff; font-size:22px; }
+@media(max-width:560px) {
+  .pwa-install-banner { align-items:flex-start; gap:10px; padding:12px; }
+  .pwa-install-copy strong { font-size:13px; }
+  .pwa-install-copy span { font-size:11px; }
+  .pwa-install-actions { gap:5px; }
+  .pwa-install-button { padding:7px 10px; }
+}
