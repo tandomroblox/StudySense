@@ -28,7 +28,12 @@
       <p class="muted">Small steps today. Better preparation tomorrow.</p>
     </section>
 
-    <section id="authPanel" class="card auth-panel">
+    <section id="authLoadingPanel" class="card auth-loading-panel" role="status" aria-live="polite">
+      <span class="auth-loading-spinner" aria-hidden="true"></span>
+      <div><h2>Restoring your study space…</h2><p class="muted">Checking your signed-in session.</p></div>
+    </section>
+
+    <section id="authPanel" class="card auth-panel" hidden>
       <p class="eyebrow">YOUR ACCOUNT</p>
       <h2 id="authHeading">Welcome to StudySense</h2>
       <p class="muted">Sign in to keep your study tasks saved to your account.</p>
