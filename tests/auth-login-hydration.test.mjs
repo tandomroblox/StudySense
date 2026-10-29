@@ -36,3 +36,14 @@ test("Session loading state is cleared for both authenticated and signed-out res
   assert.match(start, /showSignedIn\(data\.user\)/);
   assert.match(start, /showSignedOut\(/);
 });
+
+
+test("A returning browser restores the app shell while the server verifies the session", () => {
+  const shellJs = read("public/app-shell.js");
+  const script = read("public/script.js");
+  assert.ok(shellJs.includes('localStorage.getItem("studysense-session-hint") === "1"'));
+  assert.ok(shellJs.indexOf("app.hidden = false") < shellJs.indexOf("setupNavigation();"));
+  assert.ok(script.includes("function readSessionHintUser()"));
+  assert.ok(script.includes('api("/api/auth/me")'));
+  assert.ok(script.includes('localStorage.removeItem("studysense-session-hint")'));
+});

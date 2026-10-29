@@ -348,3 +348,37 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .session-loading { display:flex; align-items:center; justify-content:center; gap:12px; max-width:480px; min-height:82px; margin:0 auto 24px; color:#aeb8d4; font-size:14px; }
 .session-spinner { width:19px; height:19px; flex:0 0 19px; border:2px solid #8b9cff40; border-top-color:#8b9cff; border-radius:50%; animation:studysense-session-spin .8s linear infinite; }
 @keyframes studysense-session-spin { to { transform:rotate(360deg); } }
+
+
+/* Conversation-style StudySense tutor */
+.tutor-card { display:flex; flex-direction:column; gap:12px; min-height:420px; }
+.tutor-card .section-heading h2 { margin:6px 0 10px; }
+.tutor-intro { margin:0 0 2px; line-height:1.6; }
+.tutor-transcript { display:flex; flex-direction:column; gap:14px; min-height:235px; max-height:min(58vh,640px); overflow-y:auto; padding:16px; border:1px solid #ffffff12; border-radius:14px; background:#0d1426; scroll-behavior:smooth; }
+.tutor-message { width:fit-content; max-width:min(88%,720px); padding:12px 15px; border:1px solid #ffffff12; border-radius:15px; background:#172139; color:#e9eeff; overflow-wrap:anywhere; }
+.tutor-message.assistant { align-self:flex-start; border-top-left-radius:5px; }
+.tutor-message.user { align-self:flex-end; border-color:#8b9cff30; background:#28365b; border-top-right-radius:5px; }
+.tutor-speaker { display:block; margin-bottom:5px; color:#aab6ff; font-size:11px; font-weight:800; letter-spacing:.4px; }
+.tutor-message.user .tutor-speaker { color:#d2d9ff; }
+.tutor-message p { margin:0; line-height:1.7; white-space:pre-wrap; }
+.tutor-message.is-pending p { color:#aab6c9; }
+.tutor-message.is-error { border-color:#ffcf8a44; }
+.tutor-message.is-error p { color:#ffcfb0; }
+.tutor-starters { display:flex; flex-wrap:wrap; gap:8px; }
+.tutor-starters button { padding:8px 11px; border:1px solid #ffffff19; border-radius:20px; background:#ffffff06; color:#c8d1eb; font-size:12px; font-weight:650; white-space:normal; }
+.tutor-starters button:hover { background:#8b9cff15; border-color:#8b9cff55; }
+.tutor-card .tutor-composer { display:flex; align-items:flex-end; gap:10px; margin:0; padding:8px; border:1px solid #303b59; border-radius:15px; background:#0e1528; }
+.tutor-card .tutor-composer textarea { flex:1; width:100%; min-height:42px; max-height:150px; resize:none; padding:10px 8px; border:0; outline:none; box-shadow:none; background:transparent; line-height:1.55; }
+.tutor-card .tutor-composer textarea:focus-visible { outline:none; }
+.tutor-card .tutor-composer button { display:grid; place-items:center; width:42px; height:42px; flex:0 0 42px; padding:0; border-radius:12px; font-size:26px; line-height:1; }
+.tutor-card .tutor-composer button:disabled { opacity:.45; }
+.tutor-hint { margin:-5px 3px 0; color:#7986a5; font-size:11px; }
+.tutor-source-note { margin-top:0; line-height:1.6; }
+.visually-hidden { position:absolute!important; width:1px!important; height:1px!important; padding:0!important; margin:-1px!important; overflow:hidden!important; clip:rect(0,0,0,0)!important; white-space:nowrap!important; border:0!important; }
+@media(max-width:560px) {
+  .tutor-card { padding:16px; }
+  .tutor-transcript { min-height:210px; padding:11px; }
+  .tutor-message { max-width:94%; padding:11px 12px; }
+  .tutor-card .tutor-composer button { width:40px; height:40px; flex-basis:40px; }
+  .tutor-starters button { flex:1 1 auto; }
+}
