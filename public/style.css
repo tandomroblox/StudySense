@@ -342,3 +342,9 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 /* Time Guard extension discovery and install page */
 .time-guard-cta { display:inline-flex; align-items:center; justify-content:center; margin-top:10px; padding:12px 15px; border:1px solid #8b9cff55; border-radius:10px; background:#8b9cff13; color:#cbd3ff; font-size:13px; font-weight:750; text-decoration:none; }
 .time-guard-cta:hover,.time-guard-cta:focus-visible { background:#8b9cff22; border-color:#8b9cff99; }
+
+
+/* Session bootstrap: never flash the sign-in form before auth status resolves. */
+.session-loading { display:flex; align-items:center; justify-content:center; gap:12px; max-width:480px; min-height:82px; margin:0 auto 24px; color:#aeb8d4; font-size:14px; }
+.session-spinner { width:19px; height:19px; flex:0 0 19px; border:2px solid #8b9cff40; border-top-color:#8b9cff; border-radius:50%; animation:studysense-session-spin .8s linear infinite; }
+@keyframes studysense-session-spin { to { transform:rotate(360deg); } }

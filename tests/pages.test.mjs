@@ -104,3 +104,14 @@ test("Time Guard is a public landing page with a packaged extension download and
   assert.ok(worker.includes('"/time-guard.html"') && worker.includes('"/time-guard.css"'), "The offline shell must cache the Time Guard page and styles");
   assert.ok(read("browser-extension/README.md").includes("packaged ZIP"), "The extension folder must document the distributable package");
 });
+
+
+test("App navigation swaps routes without reloading the document", () => {
+  const shellJs = read("public/app-shell.js");
+  assert.ok(shellJs.includes("window.history.pushState"), "App routes must update browser history");
+  assert.ok(shellJs.includes('window.addEventListener("popstate"'), "Back/forward must restore the previous route");
+  assert.ok(shellJs.includes("document.body.dataset.page = nextPage"), "Route changes must switch the visible page");
+  assert.ok(shellJs.includes("event.preventDefault()"), "Internal app links should not reload the document");
+  assert.ok(!shellJs.includes('"/time-guard.html"'), "The Time Guard landing page should remain a normal page navigation");
+  assert.ok(shellJs.includes('"/profile.html": "profile"'));
+});

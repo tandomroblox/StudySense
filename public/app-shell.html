@@ -1,5 +1,5 @@
 <header class="topbar">
-    <a class="brand" href="/index.html" aria-label="StudySense dashboard"><img class="brand-icon" src="/icon.svg" alt="" width="30" height="30"><span class="brand-name">Study<span>Sense</span></span></a>
+    <a class="brand" href="/index.html" data-nav="dashboard" aria-label="StudySense dashboard"><img class="brand-icon" src="/icon.svg" alt="" width="30" height="30"><span class="brand-name">Study<span>Sense</span></span></a>
     <nav class="site-nav" aria-label="Main navigation">
       <a href="/index.html" data-nav="dashboard">Overview</a>
       <a href="/planner.html" data-nav="planner">Planner</a>
@@ -28,7 +28,9 @@
       <p class="muted">Small steps today. Better preparation tomorrow.</p>
     </section>
 
-    <section id="authPanel" class="card auth-panel">
+    <section id="authLoadingPanel" class="card session-loading" role="status" aria-live="polite"><span class="session-spinner" aria-hidden="true"></span><span>Restoring your study space…</span></section>
+
+    <section id="authPanel" class="card auth-panel" hidden>
       <p class="eyebrow">YOUR ACCOUNT</p>
       <h2 id="authHeading">Welcome to StudySense</h2>
       <p class="muted">Sign in to keep your study tasks saved to your account.</p>
