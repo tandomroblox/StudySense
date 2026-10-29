@@ -342,3 +342,13 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 /* Time Guard extension discovery and install page */
 .time-guard-cta { display:inline-flex; align-items:center; justify-content:center; margin-top:10px; padding:12px 15px; border:1px solid #8b9cff55; border-radius:10px; background:#8b9cff13; color:#cbd3ff; font-size:13px; font-weight:750; text-decoration:none; }
 .time-guard-cta:hover,.time-guard-cta:focus-visible { background:#8b9cff22; border-color:#8b9cff99; }
+
+
+/* Keep the sign-in form out of view until the saved session check completes. */
+body:not(.session-ready) #authPanel { display: none !important; }
+.session-boot-panel { display: flex; align-items: center; gap: 14px; min-height: 84px; margin: 0 0 20px; }
+.session-boot-panel strong { color: #e8ecff; font-size: 14px; }
+.session-boot-panel p { margin: 5px 0 0; font-size: 13px; line-height: 1.5; }
+.session-loader { flex: 0 0 22px; width: 22px; height: 22px; border: 2px solid #8b9cff35; border-top-color: #8b9cff; border-radius: 50%; animation: studysense-session-spin .8s linear infinite; }
+@keyframes studysense-session-spin { to { transform: rotate(360deg); } }
+@media(prefers-reduced-motion:reduce) { .session-loader { animation: none; border-top-color: #8b9cff; } }

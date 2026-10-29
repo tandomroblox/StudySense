@@ -81,6 +81,7 @@ if (curriculumGrade) {
 }
 
 const authPanel = document.querySelector("#authPanel");
+const sessionBootPanel = document.querySelector("#sessionBootPanel");
 const appPanel = document.querySelector("#appPanel");
 const authForm = document.querySelector("#authForm");
 const emailInput = document.querySelector("#emailInput");
@@ -170,6 +171,8 @@ if (googleStatus && googleMessages[googleStatus]) {
 }
 
 function showSignedOut(message = "") {
+  document.body.classList.add("session-ready");
+  if (sessionBootPanel) sessionBootPanel.hidden = true;
   document.body.classList.remove("is-signed-in");
   authPanel.hidden = false;
   appPanel.hidden = true;
@@ -178,7 +181,8 @@ function showSignedOut(message = "") {
   tasks = [];
 }
 function showSignedIn(user) {
-  document.body.classList.add("is-signed-in");
+  document.body.classList.add("session-ready", "is-signed-in");
+  if (sessionBootPanel) sessionBootPanel.hidden = true;
   authPanel.hidden = true;
   appPanel.hidden = false;
   connectGoogleButton.hidden = false;
