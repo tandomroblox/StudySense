@@ -715,10 +715,8 @@ export default {
         }
         try {
           await env.DB.prepare(
-            "INSERT INTO monitoring_devices(id,user_id,platform,device_name,last_seen_at) VALUES(?,?,?,?,datetime('now')) ON CONFLICT(id) DO UPDATE SET platform=excluded.platform,device_name=excluded.device_name,last_seen_at=datetime('now') WHERE monitoring_devices.user_id=excluded.user_id"
+            "INSERT INTO monitoring_devices(id,user_id,platform,device_name,last_seen_at) VALUES(?,?,?,?,datetime('now')) ON CONFLICT(user_id,id) DO UPDATE SET platform=excluded.platform,device_name=excluded.device_name,last_seen_at=datetime('now')"
           ).bind(deviceId,session.sub,platform,deviceName || (platform === "windows" ? "Windows PC" : "Android device")).run();
-          const owned = await env.DB.prepare("SELECT id FROM monitoring_devices WHERE id=? AND user_id=?").bind(deviceId,session.sub).first();
-          if (!owned) return json({ error: "This device ID belongs to another account." }, 403);
           await env.DB.prepare(
             "INSERT INTO monitoring_daily_usage(user_id,device_id,day,apps_json,websites_json,entertainment_seconds,cooldown_until,updated_at) VALUES(?,?,?,?,?,?,?,datetime('now')) ON CONFLICT(user_id,device_id,day) DO UPDATE SET apps_json=excluded.apps_json,websites_json=excluded.websites_json,entertainment_seconds=excluded.entertainment_seconds,cooldown_until=excluded.cooldown_until,updated_at=datetime('now')"
           ).bind(session.sub,deviceId,day,JSON.stringify(apps),JSON.stringify(websites),entertainment,cooldown).run();
