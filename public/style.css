@@ -406,3 +406,6 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
   .pwa-install-actions { gap:5px; }
   .pwa-install-button { padding:7px 10px; }
 }
+
+.tutor-card .tutor-composer button#tutorVoiceInput,.tutor-card .tutor-composer button#tutorSpeak{font-size:17px;background:#202b45;color:#dce5ff}
+.tutor-card .tutor-composer button#tutorVoiceInput:disabled{opacity:.35}
