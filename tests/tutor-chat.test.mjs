@@ -28,14 +28,30 @@ test("The chat supports Enter to send, Shift+Enter for a newline, and recent fol
 
 test("The tutor API accepts bounded chat history and infers likely subject", () => {
   const worker = read("src/index.js");
-  assert.ok(worker.includes("const hasConversation = Array.isArray(body?.messages)"));
-  assert.ok(worker.includes("body.messages.length > 16"));
+  assert.ok(worker.includes("const hasConversation = Array.isArray(body.messages)"));
+  assert.ok(worker.includes("body.messages.length > 24"));
   assert.ok(worker.includes('messages[messages.length - 1]?.role !== "user"'));
-  assert.ok(worker.includes("Infer the likely school subject and topic from the conversation."));
-  assert.ok(worker.includes("does not currently retrieve the planned PDF collection automatically"));
+  assert.ok(worker.includes("You are not limited to school subjects, a particular curriculum, grade, textbook, or study material."));
+  assert.ok(worker.includes("Do not claim to have searched or read StudySense PDFs, files, or study materials unless their contents are actually provided in the conversation."));
   assert.ok(worker.includes('if (url.pathname === "/api/tutor" && request.method === "POST")'));
 });
 
 test("The offline cache is bumped for the updated authentication and chat experience", () => {
-  assert.ok(read("public/sw.js").includes('const CACHE_NAME = "studysense-shell-v6"'));
+  assert.ok(read("public/sw.js").includes('const CACHE_NAME = "studysense-shell-v7"'));
+});
+
+test("Calendar, mistake notebook, study sessions and analytics have authenticated API routes", () => {
+  const worker = read("src/index.js");
+  for (const route of ["/api/calendar", "/api/mistakes", "/api/study-sessions", "/api/analytics", "/api/preferences"]) {
+    assert.ok(worker.includes('url.pathname === "' + route + '"') || worker.includes('url.pathname.startsWith("' + route + '/")'), route);
+  }
+  assert.ok(worker.includes("WHERE user_id=?"));
+  assert.ok(worker.includes("migration 0007"));
+});
+
+test("The web study workspace exposes calendar, mistake notebook and analytics controls", () => {
+  const script = read("public/study-tools.js");
+  for (const id of ["hubCalendarForm", "hubMistakeForm", "hubAnalyticsSummary", "hubStudyLogForm"]) {
+    assert.ok(script.includes('id="' + id + '"'), id);
+  }
 });
