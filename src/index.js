@@ -675,7 +675,7 @@ export default {
         const end = typeof b?.ends_at === "string" && b.ends_at ? b.ends_at : null;
         const notes = typeof b?.notes === "string" ? b.notes.trim() : "";
         if (!title || title.length > 160 || !["study","assignment","revision","personal"].includes(type) ||
-            !/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}/.test(start) || (end && (!/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}/.test(end) || end <= start)) || notes.length > 1000) {
+            !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(start) || (end && (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(end) || end <= start)) || notes.length > 1000) {
           return json({ error: "Enter a title, valid date/time, event type, and notes under 1,000 characters." }, 400);
         }
         const id = crypto.randomUUID();
@@ -684,7 +684,7 @@ export default {
           return json({ event: { id,title,event_type:type,starts_at:start,ends_at:end,notes,completed:0 } }, 201);
         } catch { return json({ error: "Could not save the calendar event." }, 500); }
       }
-      const eventMatch = url.pathname.match(/^\\/api\\/calendar\\/([0-9a-f-]{36})$/i);
+      const eventMatch = url.pathname.match(/^\/api\/calendar\/([0-9a-f-]{36})$/i);
       if (eventMatch && request.method === "PATCH") {
         const b = await bodyJson(request);
         const completed = b?.completed;
@@ -733,7 +733,7 @@ export default {
           return json({ mistake: { id,subject,topic,question,user_answer:userAnswer,correct_answer:correctAnswer,explanation,source,mastered:0 } }, 201);
         } catch { return json({ error: "Could not save this mistake." }, 500); }
       }
-      const mistakeMatch = url.pathname.match(/^\\/api\\/mistakes\\/([0-9a-f-]{36})$/i);
+      const mistakeMatch = url.pathname.match(/^\/api\/mistakes\/([0-9a-f-]{36})$/i);
       if (mistakeMatch && request.method === "PATCH") {
         const b = await bodyJson(request);
         if (typeof b?.mastered !== "boolean") return json({ error: "Mastered must be true or false." }, 400);
@@ -768,7 +768,7 @@ export default {
       const started = typeof b?.started_at === "string" ? b.started_at : "";
       const duration = Number(b?.duration_minutes);
       const type = typeof b?.session_type === "string" && ["focus","revision","class","other"].includes(b.session_type) ? b.session_type : "focus";
-      if (subject.length > 80 || topic.length > 180 || !/^\\d{4}-\\d{2}-\\d{2}T/.test(started) || !Number.isInteger(duration) || duration < 1 || duration > 1440) {
+      if (subject.length > 80 || topic.length > 180 || !/^\d{4}-\d{2}-\d{2}T/.test(started) || !Number.isInteger(duration) || duration < 1 || duration > 1440) {
         return json({ error: "Enter a valid start time and duration between 1 and 1,440 minutes." }, 400);
       }
       const id = crypto.randomUUID();
@@ -791,7 +791,7 @@ export default {
       const b = await bodyJson(request);
       const theme = ["dark","light","system"].includes(b?.theme) ? b.theme : "dark";
       const enabled = typeof b?.notifications_enabled === "boolean" ? (b.notifications_enabled?1:0) : 1;
-      const reminder = typeof b?.reminder_time === "string" && /^([01]\\d|2[0-3]):[0-5]\\d$/.test(b.reminder_time) ? b.reminder_time : "18:00";
+      const reminder = typeof b?.reminder_time === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(b.reminder_time) ? b.reminder_time : "18:00";
       const goal = Number.isInteger(Number(b?.weekly_goal_minutes)) && Number(b.weekly_goal_minutes)>=30 && Number(b.weekly_goal_minutes)<=10080 ? Number(b.weekly_goal_minutes) : 600;
       try {
         await env.DB.prepare("INSERT INTO user_preferences(user_id,theme,notifications_enabled,reminder_time,weekly_goal_minutes,updated_at) VALUES(?,?,?,?,?,datetime('now')) ON CONFLICT(user_id) DO UPDATE SET theme=excluded.theme,notifications_enabled=excluded.notifications_enabled,reminder_time=excluded.reminder_time,weekly_goal_minutes=excluded.weekly_goal_minutes,updated_at=datetime('now')").bind(session.sub,theme,enabled,reminder,goal).run();
