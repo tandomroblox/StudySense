@@ -340,9 +340,8 @@ export default {
       if (code.length < 30 || code.length > 200) return json({ error: "Invalid or expired desktop login code." }, 400);
       try {
         const codeHash = b64url(await hmac(env.SESSION_SECRET, code));
-        const record = await env.DB.prepare("SELECT user_id, email FROM desktop_login_codes WHERE code_hash = ? AND expires_at > datetime('now')").bind(codeHash).first();
+        const record = await env.DB.prepare("DELETE FROM desktop_login_codes WHERE code_hash = ? AND expires_at > datetime('now') RETURNING user_id, email").bind(codeHash).first();
         if (!record) return json({ error: "This desktop login code has expired or was already used. Start Google sign-in again." }, 401);
-        await env.DB.prepare("DELETE FROM desktop_login_codes WHERE code_hash = ?").bind(codeHash).run();
         const token = await makeSession({ id: record.user_id, email: record.email }, env.SESSION_SECRET);
         return json({ token, user: { id: record.user_id, email: record.email }, expires_in: SESSION_SECONDS });
       } catch (error) {
