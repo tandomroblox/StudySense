@@ -81,6 +81,23 @@ function validOrigin(request) {
   return !origin || origin === new URL(request.url).origin;
 }
 function setCorsVary(headers) { headers.set("vary", "Origin"); return headers; }
+function safeJsonObject(value) {
+  try { const parsed = JSON.parse(value || "{}"); return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {}; }
+  catch { return {}; }
+}
+function normalizeUsageEntries(value, limit, hostnameOnly) {
+  if (!Array.isArray(value) || value.length > limit) return null;
+  const out = {};
+  for (const item of value) {
+    const name = typeof item?.name === "string" ? item.name.trim() : "";
+    const seconds = Number(item?.seconds);
+    if (!name || name.length > 160 || /[\r\n\0]/.test(name) || !Number.isInteger(seconds) || seconds < 0 || seconds > 86400) return null;
+    if (hostnameOnly && (!/^(?=.{1,253}$)[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$/i.test(name) || !name.includes("."))) return null;
+    out[name] = Math.min(86400, (out[name] || 0) + seconds);
+  }
+  return out;
+}
+
 
 const GOOGLE_STATE_COOKIE = "__Host-studysense_oauth_state";
 const GOOGLE_STATE_SECONDS = 600;
@@ -656,6 +673,66 @@ export default {
       catch { return json({error:"Could not save practice result. Check the learning tools migration."},500); }
     }
 
+
+    // Visible, account-scoped device monitoring sync. Only aggregated app names,
+    // hostnames, and time totals are accepted; no URLs, page content, or keystrokes.
+    if (url.pathname === "/api/monitoring/devices" || url.pathname.startsWith("/api/monitoring/devices/") || url.pathname === "/api/monitoring/sync") {
+      const session = await readSession(request, env.SESSION_SECRET);
+      if (!session) return json({ error: "Sign in on this device to sync monitoring totals." }, 401);
+      if (url.pathname === "/api/monitoring/devices" && request.method === "GET") {
+        try {
+          const devices = await env.DB.prepare(
+            "SELECT id,platform,device_name,last_seen_at,created_at FROM monitoring_devices WHERE user_id=? ORDER BY last_seen_at DESC"
+          ).bind(session.sub).all();
+          const usage = await env.DB.prepare(
+            "SELECT device_id,day,apps_json,websites_json,entertainment_seconds,cooldown_until,updated_at FROM monitoring_daily_usage WHERE user_id=? AND day>=date('now','-30 day') ORDER BY day DESC LIMIT 500"
+          ).bind(session.sub).all();
+          return json({
+            devices: devices.results || [],
+            usage: (usage.results || []).map(row => ({
+              device_id: row.device_id, day: row.day,
+              apps: safeJsonObject(row.apps_json), websites: safeJsonObject(row.websites_json),
+              entertainment_seconds: Number(row.entertainment_seconds) || 0,
+              cooldown_until: row.cooldown_until, updated_at: row.updated_at
+            }))
+          });
+        } catch { return json({ error: "Device monitoring storage is not ready. Apply migration 0008." }, 503); }
+      }
+      if (url.pathname === "/api/monitoring/sync" && request.method === "POST") {
+        const b = await bodyJson(request);
+        const deviceId = typeof b?.device_id === "string" ? b.device_id.trim() : "";
+        const platform = typeof b?.platform === "string" ? b.platform : "";
+        const deviceName = typeof b?.device_name === "string" ? b.device_name.trim().slice(0,80) : "";
+        const day = typeof b?.day === "string" ? b.day : "";
+        const apps = normalizeUsageEntries(b?.apps, 80, false);
+        const websites = normalizeUsageEntries(b?.websites, 80, true);
+        const entertainment = Number(b?.entertainment_seconds);
+        const cooldown = typeof b?.cooldown_until === "string" && /^\d{4}-\d{2}-\d{2}T/.test(b.cooldown_until) ? b.cooldown_until : null;
+        if (!/^[A-Za-z0-9._-]{8,80}$/.test(deviceId) || !["windows","android"].includes(platform) ||
+            !/^\d{4}-\d{2}-\d{2}$/.test(day) || !apps || !websites ||
+            !Number.isInteger(entertainment) || entertainment < 0 || entertainment > 86400) {
+          return json({ error: "Invalid device monitoring snapshot." }, 400);
+        }
+        try {
+          await env.DB.prepare(
+            "INSERT INTO monitoring_devices(id,user_id,platform,device_name,last_seen_at) VALUES(?,?,?,?,datetime('now')) ON CONFLICT(user_id,id) DO UPDATE SET platform=excluded.platform,device_name=excluded.device_name,last_seen_at=datetime('now')"
+          ).bind(deviceId,session.sub,platform,deviceName || (platform === "windows" ? "Windows PC" : "Android device")).run();
+          await env.DB.prepare(
+            "INSERT INTO monitoring_daily_usage(user_id,device_id,day,apps_json,websites_json,entertainment_seconds,cooldown_until,updated_at) VALUES(?,?,?,?,?,?,?,datetime('now')) ON CONFLICT(user_id,device_id,day) DO UPDATE SET apps_json=excluded.apps_json,websites_json=excluded.websites_json,entertainment_seconds=excluded.entertainment_seconds,cooldown_until=excluded.cooldown_until,updated_at=datetime('now')"
+          ).bind(session.sub,deviceId,day,JSON.stringify(apps),JSON.stringify(websites),entertainment,cooldown).run();
+          return json({ ok: true, device_id: deviceId, synced_at: new Date().toISOString() });
+        } catch { return json({ error: "Could not save the device snapshot. Check migration 0008." }, 503); }
+      }
+      const deviceMatch = url.pathname.match(/^\/api\/monitoring\/devices\/([A-Za-z0-9._-]{8,80})$/);
+      if (deviceMatch && request.method === "DELETE") {
+        try {
+          const result = await env.DB.prepare("DELETE FROM monitoring_devices WHERE id=? AND user_id=?").bind(deviceMatch[1],session.sub).run();
+          if (!result.meta?.changes) return json({ error: "Device not found." }, 404);
+          return json({ ok: true });
+        } catch { return json({ error: "Could not unlink this device." }, 500); }
+      }
+      return json({ error: "API route not found." }, 404);
+    }
 
     // Calendar events, mistake notebook, study history, preferences, and analytics.
     if (url.pathname === "/api/calendar" || url.pathname.startsWith("/api/calendar/")) {
