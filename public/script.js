@@ -436,7 +436,7 @@ chapterForm.addEventListener("submit",async ev=>{ev.preventDefault();const b=cha
 
 
 const profileForm=document.querySelector("#profileForm"),profileName=document.querySelector("#profileName"),profileGrade=document.querySelector("#profileGrade"),profileSchool=document.querySelector("#profileSchool"),profileGoal=document.querySelector("#profileGoal"),profileMessage=document.querySelector("#profileMessage");
-const tutorForm=document.querySelector("#tutorForm"),tutorInput=document.querySelector("#tutorInput"),tutorSubmit=document.querySelector("#tutorSubmit"),tutorMessage=document.querySelector("#tutorMessage"),tutorTranscript=document.querySelector("#tutorTranscript"),tutorGradeLabel=document.querySelector("#tutorGradeLabel");
+const tutorForm=document.querySelector("#tutorForm"),tutorInput=document.querySelector("#tutorInput"),tutorSubmit=document.querySelector("#tutorSubmit"),tutorMessage=document.querySelector("#tutorMessage"),tutorTranscript=document.querySelector("#tutorTranscript"),tutorGradeLabel=document.querySelector("#tutorGradeLabel"),tutorVoiceInput=document.querySelector("#tutorVoiceInput"),tutorSpeak=document.querySelector("#tutorSpeak");
 let tutorSending=false;
 let tutorConversation=[];
 function appendTutorMessage(role, content, pending=false) {
@@ -506,6 +506,27 @@ async function sendTutorMessage(event) {
   }
 }
 tutorForm.addEventListener("submit",sendTutorMessage);
+
+let speechRecognition=null;
+if(tutorVoiceInput){
+ const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+ if(SpeechRecognition){
+  speechRecognition=new SpeechRecognition();speechRecognition.lang="en-IN";speechRecognition.interimResults=true;speechRecognition.continuous=false;
+  speechRecognition.addEventListener("start",()=>{tutorVoiceInput.textContent="⏺";tutorVoiceInput.setAttribute("aria-label","Stop voice input");tutorMessage.textContent="Listening…";});
+  speechRecognition.addEventListener("result",event=>{let text="";for(let i=event.resultIndex;i<event.results.length;i++)text+=event.results[i][0].transcript;tutorInput.value=text;resizeTutorInput();});
+  speechRecognition.addEventListener("end",()=>{tutorVoiceInput.textContent="🎙";tutorVoiceInput.setAttribute("aria-label","Use voice input");tutorMessage.textContent="";tutorInput.focus();});
+  speechRecognition.addEventListener("error",event=>{tutorMessage.textContent=event.error==="not-allowed"?"Microphone permission was denied. Allow microphone access in your browser.":"Voice input stopped. You can still type your message.";});
+  tutorVoiceInput.addEventListener("click",()=>{try{if(tutorVoiceInput.textContent==="⏺")speechRecognition.stop();else speechRecognition.start();}catch{tutorMessage.textContent="Voice input is already active."; }});
+ }else{tutorVoiceInput.disabled=true;tutorVoiceInput.title="Voice input is not supported in this browser";}
+}
+if(tutorSpeak)tutorSpeak.addEventListener("click",()=>{
+ if(!("speechSynthesis" in window)){tutorMessage.textContent="Speech playback is not supported in this browser.";return;}
+ const answers=[...tutorTranscript.querySelectorAll(".tutor-message.assistant:not(.is-pending):not(.is-error) p")];
+ const latest=answers[answers.length-1]?.textContent;
+ if(!latest){tutorMessage.textContent="There is no answer to read yet.";return;}
+ speechSynthesis.cancel();const utterance=new SpeechSynthesisUtterance(latest);utterance.lang="en-IN";speechSynthesis.speak(utterance);
+});
+
 async function loadProfile(){try{const d=await api("/api/profile"),p=d.profile||{};profileName.value=p.display_name||"";profileGrade.value=String(p.grade||9);profileSchool.value=p.school||"";profileGoal.value=String(p.daily_goal_minutes||60);document.querySelector("#syllabusClass").value=profileGrade.value;document.querySelector("#curriculumGrade").value=profileGrade.value;renderSyllabusOptions();renderSyllabusBookNote();renderCurriculumLibrary();}catch(e){profileMessage.textContent=e.message;}}
 profileGrade.addEventListener("change",()=>{document.querySelector("#syllabusClass").value=profileGrade.value;document.querySelector("#curriculumGrade").value=profileGrade.value;renderSyllabusOptions();renderSyllabusBookNote();renderCurriculumLibrary();});
 profileForm.addEventListener("submit",async e=>{e.preventDefault();const b=profileForm.querySelector('button[type="submit"]');b.disabled=true;profileMessage.textContent="Saving…";try{await api("/api/profile",{method:"PUT",body:JSON.stringify({display_name:profileName.value.trim(),grade:Number(profileGrade.value),school:profileSchool.value.trim(),daily_goal_minutes:Number(profileGoal.value)})});profileMessage.textContent="Profile saved.";}catch(err){profileMessage.textContent=err.message;}finally{b.disabled=false;}});
