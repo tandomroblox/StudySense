@@ -75,6 +75,57 @@
         <p id="hubLibraryMessage" class="hub-error" role="status"></p>
         <div id="hubLibraryItems" class="hub-list"><p class="hub-empty">Loading your library…</p></div>
       </section>
+      <section id="hubCalendarPanel" class="productivity-panel">
+        <h3>Study calendar</h3>
+        <p class="hub-muted">Keep study sessions, assignments, revisions and personal events in one place.</p>
+        <form id="hubCalendarForm">
+          <label for="hubEventTitle">Event</label><input id="hubEventTitle" maxlength="160" required placeholder="e.g. Revise chemical reactions">
+          <div class="form-row">
+            <div class="field"><label for="hubEventType">Type</label><select id="hubEventType"><option value="study">Study session</option><option value="assignment">Assignment</option><option value="revision">Revision</option><option value="personal">Personal</option></select></div>
+            <div class="field"><label for="hubEventStart">Date and time</label><input id="hubEventStart" type="datetime-local" required></div>
+          </div>
+          <label for="hubEventNotes">Notes (optional)</label><input id="hubEventNotes" maxlength="1000" placeholder="Extra details">
+          <button type="submit">Add to calendar</button>
+        </form>
+        <p id="hubCalendarMessage" class="hub-error" role="status"></p>
+        <div id="hubCalendarEvents" class="hub-list"><p class="hub-empty">Loading calendar…</p></div>
+      </section>
+      <section id="hubMistakesPanel" class="productivity-panel">
+        <h3>Mistake notebook</h3>
+        <p class="hub-muted">Save questions you got wrong, record the correct reasoning, and mark them mastered after revisiting.</p>
+        <form id="hubMistakeForm">
+          <label for="hubMistakeSubject">Subject</label><input id="hubMistakeSubject" maxlength="80" required placeholder="e.g. Science">
+          <label for="hubMistakeTopic">Topic</label><input id="hubMistakeTopic" maxlength="180" placeholder="e.g. Atoms and molecules">
+          <label for="hubMistakeQuestion">Question</label><textarea id="hubMistakeQuestion" maxlength="3000" rows="2" required></textarea>
+          <label for="hubMistakeAnswer">My answer (optional)</label><textarea id="hubMistakeAnswer" maxlength="2000" rows="2"></textarea>
+          <label for="hubMistakeCorrect">Correct answer / explanation</label><textarea id="hubMistakeCorrect" maxlength="3000" rows="3"></textarea>
+          <button type="submit">Save mistake</button>
+        </form>
+        <p id="hubMistakeMessage" class="hub-error" role="status"></p>
+        <div id="hubMistakeList" class="hub-list"><p class="hub-empty">Loading mistakes…</p></div>
+      </section>
+      <section id="hubAnalyticsPanel" class="productivity-panel">
+        <h3>Performance analytics</h3>
+        <p class="hub-muted">A view of your recorded practice, chapter progress, tasks and study time. Estimates use only data you have logged.</p>
+        <div id="hubAnalyticsSummary" class="hub-metrics"><p class="hub-empty">Loading your analytics…</p></div>
+        <div id="hubAnalyticsSubjects" class="hub-list"></div>
+        <button id="hubRefreshAnalytics" class="hub-btn-secondary" type="button">Refresh analytics</button>
+        <p id="hubAnalyticsMessage" class="hub-error" role="status"></p>
+      </section>
+      <section id="hubStudyLogPanel" class="productivity-panel">
+        <h3>Log a study session</h3>
+        <p class="hub-muted">Record focused study time so your analytics reflect more than practice scores.</p>
+        <form id="hubStudyLogForm">
+          <label for="hubStudySubject">Subject (optional)</label><input id="hubStudySubject" maxlength="80" placeholder="e.g. Mathematics">
+          <label for="hubStudyTopic">Topic (optional)</label><input id="hubStudyTopic" maxlength="180" placeholder="e.g. Triangles">
+          <div class="form-row">
+            <div class="field"><label for="hubStudyDate">Started</label><input id="hubStudyDate" type="datetime-local" required></div>
+            <div class="field"><label for="hubStudyMinutes">Minutes</label><input id="hubStudyMinutes" type="number" min="1" max="1440" value="25" required></div>
+          </div>
+          <button type="submit">Save study session</button>
+        </form>
+        <p id="hubStudyLogMessage" class="hub-error" role="status"></p>
+      </section>
     </div>`;
 
   const firstExisting = appPanel.querySelector(".profile-card");
@@ -619,6 +670,91 @@
     } finally { button.disabled = false; }
   });
 
+
+  function localDateTimeValue(date) {
+    const d = date || new Date();
+    const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+    return local.toISOString().slice(0,16);
+  }
+  $("hubEventStart").value = localDateTimeValue(new Date(Date.now() + 60*60*1000));
+  $("hubStudyDate").value = localDateTimeValue(new Date());
+  async function renderCalendar() {
+    const data = await safeApi("/api/calendar");
+    const list = $("hubCalendarEvents");
+    list.replaceChildren();
+    const events = data.events || [];
+    if (!events.length) { list.append(make("p","hub-empty","No calendar events yet.")); return; }
+    events.forEach(event => {
+      const row = make("article","hub-item");
+      const title = make("strong","",event.title);
+      const meta = make("p","hub-muted",new Date(event.starts_at).toLocaleString() + " · " + event.event_type);
+      const actions = make("div","hub-row-actions");
+      const done = make("button","hub-btn-secondary",Number(event.completed) ? "Mark pending" : "Mark complete");
+      done.type="button";
+      done.addEventListener("click",async()=>{try{await safeApi("/api/calendar/"+event.id,{method:"PATCH",body:JSON.stringify({completed:!Number(event.completed)})});await renderCalendar();}catch(e){$("hubCalendarMessage").textContent=e.message;}});
+      const remove = make("button","hub-btn-secondary","Delete"); remove.type="button";
+      remove.addEventListener("click",async()=>{if(!confirm("Delete this calendar event?"))return;try{await safeApi("/api/calendar/"+event.id,{method:"DELETE"});await renderCalendar();}catch(e){$("hubCalendarMessage").textContent=e.message;}});
+      actions.append(done,remove); row.append(title,meta); if(event.notes)row.append(make("p","hub-muted",event.notes)); row.append(actions); list.append(row);
+    });
+  }
+  $("hubCalendarForm").addEventListener("submit",async event=>{
+    event.preventDefault(); const button=event.submitter; button.disabled=true;
+    try {
+      const payload={title:$("hubEventTitle").value,event_type:$("hubEventType").value,starts_at:$("hubEventStart").value,notes:$("hubEventNotes").value};
+      await safeApi("/api/calendar",{method:"POST",body:JSON.stringify(payload)});
+      $("hubCalendarForm").reset(); $("hubEventStart").value=localDateTimeValue(new Date(Date.now()+60*60*1000));
+      $("hubCalendarMessage").textContent="Event saved."; await renderCalendar(); window.dispatchEvent(new Event("studysense:data-changed"));
+    } catch(e){$("hubCalendarMessage").textContent=e.message;} finally{button.disabled=false;}
+  });
+  async function renderMistakes() {
+    const data=await safeApi("/api/mistakes"); const list=$("hubMistakeList"); list.replaceChildren();
+    const items=data.mistakes||[];
+    if(!items.length){list.append(make("p","hub-empty","Your mistake notebook is empty. Add a question you want to revisit."));return;}
+    items.forEach(item=>{
+      const row=make("article","hub-item"); row.append(make("strong","",item.question),make("p","hub-muted",(item.subject||"")+(item.topic?" · "+item.topic:"")));
+      if(item.user_answer)row.append(make("p","hub-muted","Your answer: "+item.user_answer));
+      if(item.correct_answer)row.append(make("p","", "Correction: "+item.correct_answer));
+      if(item.explanation)row.append(make("p","hub-muted",item.explanation));
+      const actions=make("div","hub-row-actions"),toggle=make("button","hub-btn-secondary",Number(item.mastered)?"Mark to revisit":"Mark mastered");
+      toggle.type="button";toggle.addEventListener("click",async()=>{try{await safeApi("/api/mistakes/"+item.id,{method:"PATCH",body:JSON.stringify({mastered:!Number(item.mastered)})});await renderMistakes();}catch(e){$("hubMistakeMessage").textContent=e.message;}});
+      const del=make("button","hub-btn-secondary","Delete");del.type="button";del.addEventListener("click",async()=>{if(!confirm("Delete this saved mistake?"))return;try{await safeApi("/api/mistakes/"+item.id,{method:"DELETE"});await renderMistakes();}catch(e){$("hubMistakeMessage").textContent=e.message;}});
+      actions.append(toggle,del);row.append(actions);list.append(row);
+    });
+  }
+  $("hubMistakeForm").addEventListener("submit",async event=>{
+    event.preventDefault();const button=event.submitter;button.disabled=true;
+    try{
+      await safeApi("/api/mistakes",{method:"POST",body:JSON.stringify({subject:$("hubMistakeSubject").value,topic:$("hubMistakeTopic").value,question:$("hubMistakeQuestion").value,user_answer:$("hubMistakeAnswer").value,correct_answer:$("hubMistakeCorrect").value,explanation:"",source:"manual"})});
+      $("hubMistakeForm").reset();$("hubMistakeMessage").textContent="Saved to your mistake notebook.";await renderMistakes();
+    }catch(e){$("hubMistakeMessage").textContent=e.message;}finally{button.disabled=false;}
+  });
+  async function renderAnalytics() {
+    const data=await safeApi("/api/analytics");const summary=$("hubAnalyticsSummary");summary.replaceChildren();
+    const cards=[
+      ["Practice accuracy",data.practice.accuracy+"%"],
+      ["Questions attempted",data.practice.questions],
+      ["Study time",Math.floor(data.study.total_minutes/60)+"h "+(data.study.total_minutes%60)+"m"],
+      ["Chapters mastered",data.chapters.filter(x=>x.status==="mastered").length+"/"+data.chapters.length],
+      ["Tasks completed",data.tasks.completed+"/"+data.tasks.total],
+      ["Mistakes mastered",data.mistakes.mastered+"/"+data.mistakes.total]
+    ];
+    cards.forEach(([label,value])=>{const card=make("article","hub-metric");card.append(make("span","hub-muted",label),make("strong","",String(value)));summary.append(card);});
+    const subjects=$("hubAnalyticsSubjects");subjects.replaceChildren();
+    (data.practice.logs||[]).reduce((acc,row)=>{const key=row.subject||"Other";acc[key]=(acc[key]||{q:0,c:0});acc[key].q+=Number(row.questions)||0;acc[key].c+=Number(row.correct)||0;return acc;},{}); 
+    const grouped={};(data.practice.logs||[]).forEach(row=>{const k=row.subject||"Other";grouped[k]||={q:0,c:0};grouped[k].q+=Number(row.questions)||0;grouped[k].c+=Number(row.correct)||0;});
+    Object.values(grouped).forEach(x=>{const pct=x.q?Math.round(x.c/x.q*100):0;const row=make("div","hub-subject-stat");row.append(make("span","",x.subject||"Subject"));const bar=make("div","hub-bar");const fill=make("span","");fill.style.width=pct+"%";bar.append(fill);row.append(bar,make("strong","",pct+"%"));subjects.append(row);});
+    if(!Object.keys(grouped).length)subjects.append(make("p","hub-empty","Log practice to see subject-level accuracy."));
+  }
+  $("hubRefreshAnalytics").addEventListener("click",()=>renderAnalytics().catch(e=>$("hubAnalyticsMessage").textContent=e.message));
+  $("hubStudyLogForm").addEventListener("submit",async event=>{
+    event.preventDefault();const button=event.submitter;button.disabled=true;
+    try{await safeApi("/api/study-sessions",{method:"POST",body:JSON.stringify({subject:$("hubStudySubject").value,topic:$("hubStudyTopic").value,started_at:$("hubStudyDate").value,duration_minutes:Number($("hubStudyMinutes").value),session_type:"focus"})});$("hubStudyLogMessage").textContent="Study session saved.";await renderAnalytics();}
+    catch(e){$("hubStudyLogMessage").textContent=e.message;}finally{button.disabled=false;}
+  });
+  function refreshExpansionTools() {
+    Promise.all([renderCalendar(),renderMistakes(),renderAnalytics()]).catch(error=>{$("hubAnalyticsMessage").textContent=error.message;});
+  }
+  $("hubCalendarForm").addEventListener("reset",()=>{});
   function clearPrivateCache() {
     accountGeneration++;
     cache = { exams: [], chapters: [], practice: [], flashcards: [], tasks: [], revisions: [], library: [], profile: null };
