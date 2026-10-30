@@ -345,90 +345,70 @@ export default {
     }
     if (url.pathname === "/api/tutor" && request.method === "POST") {
       const session = await readSession(request, env.SESSION_SECRET);
-      if (!session) return json({ error: "Please sign in to use the AI tutor." }, 401);
+      if (!session) return json({ error: "Please sign in to use the AI assistant." }, 401);
       if (!env.AI || typeof env.AI.run !== "function") {
-        return json({ error: "The AI tutor is not enabled on the live Worker yet. The AI binding must be deployed first." }, 503);
+        return json({ error: "The AI service is not enabled on the live Worker. Please contact support." }, 503);
       }
 
       const body = await bodyJson(request);
-      const grade = Number(body?.grade);
-      const subject = typeof body?.subject === "string" ? body.subject.trim() : "";
-      const chapter = typeof body?.chapter === "string" ? body.chapter.trim() : "";
-      const question = typeof body?.question === "string" ? body.question.trim() : "";
-      const context = typeof body?.context === "string" ? body.context.trim() : "";
-      const allowedSubjects = ["Mathematics", "Science", "Social Science", "English", "Hindi", "Telugu"];
-      const hasConversation = Array.isArray(body?.messages);
-      let messages = [];
-
-      if (!Number.isInteger(grade) || grade < 6 || grade > 10 ||
-          (subject && !allowedSubjects.includes(subject)) ||
-          chapter.length > 150 || context.length > 6000) {
-        return json({ error: "Choose a valid class (6–10). A supplied subject hint or chapter must be valid, and lesson context is limited to 6,000 characters." }, 400);
-      }
-
+      if (!body || typeof body !== "object") return json({ error: "Send a valid chat message." }, 400);
+      const hasConversation = Array.isArray(body.messages);
+      const grade = Number.isInteger(Number(body.grade)) ? Number(body.grade) : null;
+      const messages = [];
       if (hasConversation) {
-        if (body.messages.length < 1 || body.messages.length > 16) {
-          return json({ error: "Send between 1 and 16 recent chat messages." }, 400);
+        if (body.messages.length < 1 || body.messages.length > 24) {
+          return json({ error: "This conversation is too long. Start a new chat and try again." }, 400);
         }
         let totalCharacters = 0;
         for (const message of body.messages) {
           if (!message || !["user", "assistant"].includes(message.role) ||
               typeof message.content !== "string" || !message.content.trim() ||
-              message.content.trim().length > 3000) {
-            return json({ error: "Each chat message must have a valid role and 1–3,000 characters of text." }, 400);
+              message.content.trim().length > 6000) {
+            return json({ error: "One of the chat messages is empty or too long. Please shorten it and try again." }, 400);
           }
           totalCharacters += message.content.trim().length;
           messages.push({ role: message.role, content: message.content.trim() });
         }
-        if (messages[messages.length - 1]?.role !== "user") {
-          return json({ error: "The last chat message must be a user message." }, 400);
-        }
-        if (totalCharacters > 12000) {
-          return json({ error: "This chat turn is too long. Start a new conversation or shorten earlier messages." }, 400);
+        if (messages[messages.length - 1]?.role !== "user" || totalCharacters > 24000) {
+          return json({ error: "Please send a shorter message or start a new conversation." }, 400);
         }
       } else {
-        if (!question || question.length > 2000) {
-          return json({ error: "Enter a question under 2,000 characters." }, 400);
-        }
-        const legacyQuestion = [
-          "Student class: " + grade,
-          "Subject hint (if supplied): " + (subject || "Infer the likely subject from the question"),
-          "Chapter hint: " + (chapter || "Not specified"),
-          "Question: " + question,
-          "Student-provided lesson material (if supplied, use it as source context and do not add unsupported chapter-specific claims):",
-          context || "(No lesson material provided.)"
-        ].join("\n");
-        messages = [{ role: "user", content: legacyQuestion }];
+        const question = typeof body.question === "string" ? body.question.trim() : "";
+        if (!question || question.length > 6000) return json({ error: "Enter a message under 6,000 characters." }, 400);
+        messages.push({ role: "user", content: question });
       }
 
       const systemPrompt = [
-        "You are StudySense, a warm, careful school tutor for Indian students in Classes 6–10.",
-        "Help with school learning: explain concepts, solve problems step by step, quiz the student one question at a time, clarify doubts, and help with revision.",
-        "Infer the likely school subject and topic from the conversation. Do not demand that the student choose a subject; ask a short clarifying question only when the actual question is unclear.",
-        "Use recent user and assistant messages to understand follow-ups and avoid restarting explanations unnecessarily.",
-        "Stay age-appropriate, accurate, concise but useful, and explain terms in accessible language.",
-        "When working through a numerical or maths problem, show the essential steps rather than only giving the answer.",
-        "Do not fabricate textbook citations, page numbers, chapter text, or claims that you searched a PDF library.",
-        "Only claim source-grounded PDF/textbook knowledge when the relevant source passage is actually included in the conversation. This request does not currently retrieve the planned PDF collection automatically. If a question depends on a specific textbook passage that is not provided, say what you can answer generally and ask for the passage to verify specifics.",
-        "For quizzes, ask one question at a time and wait for the student's answer. For ordinary doubts, answer directly and optionally finish with one short check-your-understanding question.",
-        "If the student asks unrelated questions, briefly redirect to school learning."
+        "You are StudySense, a helpful, capable conversational AI assistant.",
+        "Answer the user's actual question directly. You are not limited to school subjects, a particular curriculum, grade, textbook, or study material.",
+        "You can help with science, mathematics, technology, coding, writing, general knowledge, planning, explanations, brainstorming, and everyday questions.",
+        "Adapt the depth and style to the question. Explain reasoning clearly when useful, and ask a clarifying question only when necessary.",
+        "Do not claim to have searched or read StudySense PDFs, files, or study materials unless their contents are actually provided in the conversation.",
+        "Be accurate. If you are uncertain, say so rather than inventing facts."
       ].join(" ");
-
       try {
-        const result = await env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
+        const result = await env.AI.run("@cf/meta/llama-3.1-8b-fast-v2", {
           messages: [
-            { role: "system", content: systemPrompt + "\nThe student's class is " + grade + "." },
+            { role: "system", content: systemPrompt + (grade && grade >= 1 && grade <= 12 ? " The user is a student in class/grade " + grade + " where relevant; do not restrict the topics they can ask about." : "") },
             ...messages
           ],
-          max_tokens: 1000,
-          temperature: 0.25
+          max_tokens: 1600,
+          temperature: 0.55
         });
-        const answer = typeof result?.response === "string" ? result.response.trim() : "";
-        if (!answer) return json({ error: "The tutor returned an empty response. Please try again." }, 502);
-        return json({ answer, model: "Cloudflare Workers AI", subject_inferred: !subject, conversation: hasConversation });
+        const answer = (typeof result?.response === "string" && result.response.trim()) ||
+          (typeof result?.choices?.[0]?.message?.content === "string" && result.choices[0].message.content.trim()) || "";
+        if (!answer) {
+          console.error("StudySense tutor returned no text", { resultKeys: result && typeof result === "object" ? Object.keys(result) : [] });
+          return json({ error: "The AI returned an empty answer. Please try again." }, 502);
+        }
+        return json({ answer, model: "StudySense AI", conversation: hasConversation });
       } catch (error) {
-        console.error("StudySense tutor request failed", { name: error instanceof Error ? error.name : "UnknownError" });
-        return json({ error: "The tutor could not answer right now. Please try again in a moment." }, 502);
+        console.error("StudySense tutor request failed", {
+          name: error instanceof Error ? error.name : "UnknownError",
+          message: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack?.slice(0, 1200) : undefined
+        });
+        return json({ error: "The AI service had a problem processing that message. Please try again shortly." }, 502);
       }
     }
 
