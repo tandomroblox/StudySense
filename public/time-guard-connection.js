@@ -107,7 +107,7 @@
         const title = document.createElement("h3");
         title.textContent = (device.device_name || device.platform || "Device") + " · " + String(device.platform || "").toUpperCase();
         const seen = document.createElement("p");
-        seen.textContent = "Last sync: " + new Date(device.last_seen_at + "Z").toLocaleString();
+        seen.textContent = "Last sync: " + new Date(String(device.last_seen_at || "").replace(" ", "T") + "Z").toLocaleString();
         const rows = (data.usage || []).filter(x => x.device_id === device.id).slice(0, 7);
         const summary = document.createElement("p");
         summary.textContent = rows.length ? rows.map(x => x.day + ": " + Math.round(Object.values(x.apps || {}).reduce((a,b)=>a+(Number(b)||0),0)/60) + "m apps, " + Math.round(Object.values(x.websites || {}).reduce((a,b)=>a+(Number(b)||0),0)/60) + "m websites").join(" · ") : "No daily snapshots yet.";
@@ -128,6 +128,8 @@
       cloudStatus.textContent = error && error.message ? error.message : "Could not load synced device activity.";
     }
   }
+  const cloudRefresh = document.getElementById("cloudMonitoringRefresh");
+  if (cloudRefresh) cloudRefresh.addEventListener("click", loadCloudDevices);
   loadCloudDevices();
   requestStatus();
 })();
