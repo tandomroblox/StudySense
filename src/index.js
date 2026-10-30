@@ -98,7 +98,7 @@ async function verifyState(token, secret) {
     const supplied = fromB64url(parts[1]);
     if (expected.length !== supplied.length || !expected.every((v, i) => v === supplied[i])) return null;
     const payload = JSON.parse(new TextDecoder().decode(fromB64url(parts[0])));
-    if (!payload.exp || payload.exp < Date.now() / 1000 || !payload.nonce || !["login", "link"].includes(payload.mode)) return null;
+    if (!payload.exp || payload.exp < Date.now() / 1000 || !payload.nonce || !["login", "link", "desktop"].includes(payload.mode)) return null;
     return payload;
   } catch { return null; }
 }
@@ -183,7 +183,8 @@ export default {
 
     if (url.pathname === "/api/auth/google/start" && request.method === "GET") {
       if (!env.GOOGLE_CLIENT_ID) return json({ error: "Google sign-in is not configured yet. Add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET to the Worker." }, 503);
-      const mode = url.searchParams.get("mode") === "link" ? "link" : "login";
+      const requestedMode = url.searchParams.get("mode");
+      const mode = requestedMode === "link" ? "link" : requestedMode === "desktop" ? "desktop" : "login";
       let currentSession = null;
       if (mode === "link") {
         currentSession = await readSession(request, env.SESSION_SECRET);
@@ -263,6 +264,15 @@ export default {
           await env.DB.prepare("INSERT INTO users (id, email, password_hash, google_sub) VALUES (?, ?, NULL, ?)").bind(id, identity.email, identity.sub).run();
           user = { id, email: identity.email };
         }
+        if (state.mode === "desktop") {
+          const code = b64url(crypto.getRandomValues(new Uint8Array(32)));
+          await env.DB.prepare("INSERT INTO desktop_login_codes (code_hash, user_id, email, expires_at) VALUES (?, ?, ?, datetime('now', '+2 minutes'))")
+            .bind(b64url(await hmac(env.SESSION_SECRET, code)), user.id, user.email).run();
+          const appUrl = new URL("studysense://auth");
+          appUrl.searchParams.set("code", code);
+          return new Response(null, { status: 303, headers: { "location": appUrl.toString(), "set-cookie": clearStateCookie, "cache-control": "no-store" } });
+        }
+
         const token = await makeSession(user, env.SESSION_SECRET);
         const headers = new Headers({
           "location": new URL("/", request.url).toString(),
@@ -324,6 +334,21 @@ export default {
       }
     }
 
+    if (url.pathname === "/api/auth/desktop/exchange" && request.method === "POST") {
+      const body = await bodyJson(request);
+      const code = typeof body?.code === "string" ? body.code : "";
+      if (code.length < 30 || code.length > 200) return json({ error: "Invalid or expired desktop login code." }, 400);
+      try {
+        const codeHash = b64url(await hmac(env.SESSION_SECRET, code));
+        const record = await env.DB.prepare("DELETE FROM desktop_login_codes WHERE code_hash = ? AND expires_at > datetime('now') RETURNING user_id, email").bind(codeHash).first();
+        if (!record) return json({ error: "This desktop login code has expired or was already used. Start Google sign-in again." }, 401);
+        const token = await makeSession({ id: record.user_id, email: record.email }, env.SESSION_SECRET);
+        return json({ token, user: { id: record.user_id, email: record.email }, expires_in: SESSION_SECONDS });
+      } catch (error) {
+        console.error("Desktop login exchange failed", error);
+        return json({ error: "Desktop sign-in could not be completed. Please try again." }, 500);
+      }
+    }
     if (url.pathname === "/api/auth/logout" && request.method === "POST") {
       return json({ ok: true }, 200, { "set-cookie": sessionCookie("", 0) });
     }
