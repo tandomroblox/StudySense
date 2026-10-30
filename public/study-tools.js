@@ -126,6 +126,26 @@
         </form>
         <p id="hubStudyLogMessage" class="hub-error" role="status"></p>
       </section>
+      <section id="hubReviewPanel" class="productivity-panel">
+        <h3>Mistake revision mode</h3>
+        <p class="hub-muted">Work through saved mistakes one at a time. Reveal the correction only after attempting it.</p>
+        <div id="hubReviewCard" class="hub-item"><p class="hub-empty">Load your mistake notebook to begin.</p></div>
+        <div class="hub-row-actions"><button id="hubReviewReveal" type="button">Reveal correction</button><button id="hubReviewNext" class="hub-btn-secondary" type="button">Next question</button></div>
+        <p id="hubReviewMessage" class="hub-error" role="status"></p>
+      </section>
+      <section id="hubPreferencesPanel" class="productivity-panel">
+        <h3>Study preferences</h3>
+        <p class="hub-muted">Set the appearance and weekly target for this account. Browser reminders work while StudySense is open and permission is enabled.</p>
+        <form id="hubPreferencesForm">
+          <label for="hubTheme">Appearance</label><select id="hubTheme"><option value="dark">Dark</option><option value="light">Light</option><option value="system">Use device setting</option></select>
+          <label for="hubWeeklyGoal">Weekly study goal (minutes)</label><input id="hubWeeklyGoal" type="number" min="30" max="10080" value="600">
+          <label for="hubReminderTime">Daily reminder time</label><input id="hubReminderTime" type="time" value="18:00">
+          <label class="hub-inline-check"><input id="hubNotifications" type="checkbox" checked> Enable browser reminders</label>
+          <button type="submit">Save preferences</button>
+        </form>
+        <p id="hubPreferencesMessage" class="hub-error" role="status"></p>
+        <div class="hub-row-actions"><button id="hubEnableNotifications" class="hub-btn-secondary" type="button">Allow browser notifications</button><button id="hubExportData" class="hub-btn-secondary" type="button">Export my StudySense data</button></div>
+      </section>
     </div>`;
 
   const firstExisting = appPanel.querySelector(".profile-card");
@@ -753,9 +773,74 @@
     catch(e){$("hubStudyLogMessage").textContent=e.message;}finally{button.disabled=false;}
   });
   function refreshExpansionTools() {
-    Promise.all([renderCalendar(),renderMistakes(),renderAnalytics()]).catch(error=>{$("hubAnalyticsMessage").textContent=error.message;});
+    Promise.all([renderCalendar(),renderMistakes(),renderAnalytics(),renderReview(),loadPreferences()]).catch(error=>{$("hubAnalyticsMessage").textContent=error.message;});
   }
   $("hubCalendarForm").addEventListener("reset",()=>{});
+
+  let reviewItems=[],reviewIndex=0,reviewRevealed=false,preferencesTimer=null;
+  async function renderReview() {
+    const data=await safeApi("/api/mistakes");reviewItems=(data.mistakes||[]).filter(x=>!Number(x.mastered));
+    reviewIndex=0;reviewRevealed=false;showReviewCard();
+  }
+  function showReviewCard() {
+    const card=$("hubReviewCard");card.replaceChildren();
+    if(!reviewItems.length){card.append(make("p","hub-empty","No unmastered mistakes. Add a question to your notebook first."));return;}
+    const item=reviewItems[reviewIndex%reviewItems.length];
+    card.append(make("p","hub-muted",(item.subject||"")+(item.topic?" · "+item.topic:"")));
+    card.append(make("strong","",item.question));
+    if(item.user_answer)card.append(make("p","hub-muted","Your previous answer: "+item.user_answer));
+    if(reviewRevealed){
+      card.append(make("p","","Correction: "+(item.correct_answer||"No correction saved yet.")));
+      if(item.explanation)card.append(make("p","hub-muted",item.explanation));
+      const mastered=make("button","hub-btn-secondary","I know this now");mastered.type="button";
+      mastered.addEventListener("click",async()=>{try{await safeApi("/api/mistakes/"+item.id,{method:"PATCH",body:JSON.stringify({mastered:true})});reviewItems.splice(reviewIndex%reviewItems.length,1);reviewIndex=0;reviewRevealed=false;showReviewCard();await renderMistakes();}catch(e){$("hubReviewMessage").textContent=e.message;}});
+      card.append(mastered);
+    }
+  }
+  $("hubReviewReveal").addEventListener("click",()=>{reviewRevealed=true;showReviewCard();});
+  $("hubReviewNext").addEventListener("click",()=>{if(reviewItems.length){reviewIndex=(reviewIndex+1)%reviewItems.length;reviewRevealed=false;showReviewCard();}});
+  async function loadPreferences(){
+    const data=await safeApi("/api/preferences"),p=data.preferences||{};
+    $("hubTheme").value=p.theme||"dark";$("hubWeeklyGoal").value=p.weekly_goal_minutes||600;
+    $("hubReminderTime").value=p.reminder_time||"18:00";$("hubNotifications").checked=Number(p.notifications_enabled)!==0;
+    applyTheme(p.theme||"dark");
+  }
+  function applyTheme(theme){
+    const root=document.documentElement;
+    if(theme==="system"){root.removeAttribute("data-study-theme");}
+    else root.setAttribute("data-study-theme",theme);
+  }
+  $("hubPreferencesForm").addEventListener("submit",async event=>{
+    event.preventDefault();const button=event.submitter;button.disabled=true;
+    try{
+      const payload={theme:$("hubTheme").value,weekly_goal_minutes:Number($("hubWeeklyGoal").value),reminder_time:$("hubReminderTime").value,notifications_enabled:$("hubNotifications").checked};
+      const data=await safeApi("/api/preferences",{method:"PATCH",body:JSON.stringify(payload)});
+      applyTheme(data.preferences.theme);$("hubPreferencesMessage").textContent="Preferences saved.";
+      scheduleBrowserReminder(data.preferences);
+    }catch(e){$("hubPreferencesMessage").textContent=e.message;}finally{button.disabled=false;}
+  });
+  $("hubEnableNotifications").addEventListener("click",async()=>{
+    if(!("Notification" in window)){$("hubPreferencesMessage").textContent="This browser does not support notifications.";return;}
+    const permission=await Notification.requestPermission();
+    $("hubPreferencesMessage").textContent=permission==="granted"?"Browser notifications enabled.":"Notification permission was not granted.";
+  });
+  function scheduleBrowserReminder(p){
+    if(preferencesTimer)clearTimeout(preferencesTimer);
+    if(!p||!p.notifications_enabled||!("Notification" in window)||Notification.permission!=="granted")return;
+    const [h,m]=(p.reminder_time||"18:00").split(":").map(Number),now=new Date(),next=new Date();
+    next.setHours(h,m,0,0);if(next<=now)next.setDate(next.getDate()+1);
+    preferencesTimer=setTimeout(()=>{if(!document.hidden)new Notification("StudySense reminder",{body:"Time for your planned study session."});scheduleBrowserReminder(p);},Math.min(next-now,2147480000));
+  }
+  $("hubExportData").addEventListener("click",async()=>{
+    const button=$("hubExportData");button.disabled=true;
+    try{
+      const routes=["/api/profile","/api/exams","/api/chapters","/api/tasks","/api/practice/logs","/api/calendar","/api/mistakes","/api/study-sessions","/api/preferences","/api/analytics"];
+      const entries=await Promise.all(routes.map(async route=>[route,await safeApi(route)]));
+      const blob=new Blob([JSON.stringify({exported_at:new Date().toISOString(),product:"StudySense",data:Object.fromEntries(entries)},null,2)],{type:"application/json"});
+      const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="studysense-data-export.json";a.click();URL.revokeObjectURL(url);
+      $("hubPreferencesMessage").textContent="Your export has been generated on this device.";
+    }catch(e){$("hubPreferencesMessage").textContent="Export could not include all account data: "+e.message;}finally{button.disabled=false;}
+  });
   function clearPrivateCache() {
     accountGeneration++;
     cache = { exams: [], chapters: [], practice: [], flashcards: [], tasks: [], revisions: [], library: [], profile: null };
