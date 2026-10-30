@@ -46,3 +46,11 @@
 .hub-row-actions button{font-size:.85rem}
 .productivity-panel form input,.productivity-panel form textarea,.productivity-panel form select{max-width:100%}
 @media(max-width:560px){.hub-subject-stat{grid-template-columns:1fr 2fr 38px;gap:7px}}
+
+.hub-inline-check{display:flex!important;align-items:center;gap:9px;margin:12px 0}
+.hub-inline-check input{width:auto!important}
+:root[data-study-theme="light"]{color-scheme:light}
+:root[data-study-theme="light"] body{background:#f5f7fb;color:#172033}
+:root[data-study-theme="light"] .card,:root[data-study-theme="light"] .productivity-panel{background:#fff;color:#172033;border-color:#dce2ec}
+:root[data-study-theme="light"] .hub-item,:root[data-study-theme="light"] .hub-metric{background:#f7f9fc;border-color:#dce2ec}
+:root[data-study-theme="light"] .hub-muted,:root[data-study-theme="light"] .hub-empty{color:#536078}
