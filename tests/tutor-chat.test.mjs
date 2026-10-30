@@ -55,3 +55,15 @@ test("The web study workspace exposes calendar, mistake notebook and analytics c
     assert.ok(script.includes('id="' + id + '"'), id);
   }
 });
+
+test("Study preferences, export and review mode are connected to real account data", () => {
+  const script = read("public/study-tools.js");
+  assert.ok(script.includes('safeApi("/api/preferences"'));
+  assert.ok(script.includes('safeApi("/api/practice")'));
+  assert.ok(script.includes('safeApi("/api/calendar")'));
+  assert.ok(script.includes('safeApi("/api/mistakes")'));
+  assert.ok(script.includes('studysense-data-export.json'));
+  assert.ok(script.includes("Notification.requestPermission()"));
+  assert.ok(script.includes("hubReviewReveal"));
+  assert.ok(script.includes("weeklyGoal"));
+});
