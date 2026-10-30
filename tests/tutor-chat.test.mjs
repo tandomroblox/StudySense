@@ -37,7 +37,7 @@ test("The tutor API accepts bounded chat history and infers likely subject", () 
 });
 
 test("The offline cache is bumped for the updated authentication and chat experience", () => {
-  assert.ok(read("public/sw.js").includes('const CACHE_NAME = "studysense-shell-v7"'));
+  assert.ok(read("public/sw.js").includes('const CACHE_NAME = "studysense-shell-v8"'));
 });
 
 test("Calendar, mistake notebook, study sessions and analytics have authenticated API routes", () => {
@@ -66,4 +66,13 @@ test("Study preferences, export and review mode are connected to real account da
   assert.ok(script.includes("Notification.requestPermission()"));
   assert.ok(script.includes("hubReviewReveal"));
   assert.ok(script.includes("weeklyGoal"));
+});
+
+test("The AI tutor supports browser voice input and spoken answers", () => {
+  const shell = read("public/app-shell.html");
+  const script = read("public/script.js");
+  assert.ok(shell.includes('id="tutorVoiceInput"'));
+  assert.ok(shell.includes('id="tutorSpeak"'));
+  assert.ok(script.includes("window.SpeechRecognition||window.webkitSpeechRecognition"));
+  assert.ok(script.includes("SpeechSynthesisUtterance"));
 });
