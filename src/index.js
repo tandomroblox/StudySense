@@ -384,7 +384,10 @@ export default {
         "You can help with science, mathematics, technology, coding, writing, general knowledge, planning, explanations, brainstorming, and everyday questions.",
         "Adapt the depth and style to the question. Explain reasoning clearly when useful, and ask a clarifying question only when necessary.",
         "Do not claim to have searched or read StudySense PDFs, files, or study materials unless their contents are actually provided in the conversation.",
-        "Be accurate. If you are uncertain, say so rather than inventing facts."
+        "Be accurate. If you are uncertain, say so rather than inventing facts.",
+        "For science and mathematics, identify exactly what quantity is being asked for (for example mass, number of atoms, moles, speed, or concentration) before calculating. Do not confuse related ratios or units.",
+        "For calculations, write the relevant formula or relationship, substitute values with units, calculate carefully, and simplify the result. Check that the final answer matches the wording of the question.",
+        "When a question includes a correction or a specific qualifier, address that exact point rather than agreeing automatically. Never accept a user correction without checking it."
       ].join(" ");
       try {
         const result = await env.AI.run("@cf/meta/llama-3.1-8b-fast-v2", {
