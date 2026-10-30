@@ -470,6 +470,7 @@
         $("hubLibraryGrade").value = String(cache.profile.grade);
       }
       renderMetricsSummary();
+      refreshExpansionTools();
       $("hubReadinessMessage").textContent = errors.filter(e => e.startsWith("exams:")).join(" ");
       const revisionError = errors.find(e => e.startsWith("revisions:"));
       $("hubRevisionMessage").textContent = revisionError || "";
@@ -741,7 +742,7 @@
     cards.forEach(([label,value])=>{const card=make("article","hub-metric");card.append(make("span","hub-muted",label),make("strong","",String(value)));summary.append(card);});
     const subjects=$("hubAnalyticsSubjects");subjects.replaceChildren();
     (data.practice.logs||[]).reduce((acc,row)=>{const key=row.subject||"Other";acc[key]=(acc[key]||{q:0,c:0});acc[key].q+=Number(row.questions)||0;acc[key].c+=Number(row.correct)||0;return acc;},{}); 
-    const grouped={};(data.practice.logs||[]).forEach(row=>{const k=row.subject||"Other";grouped[k]||={q:0,c:0};grouped[k].q+=Number(row.questions)||0;grouped[k].c+=Number(row.correct)||0;});
+    const grouped={};(data.practice.logs||[]).forEach(row=>{const k=row.subject||"Other";grouped[k]||={subject:k,q:0,c:0};grouped[k].q+=Number(row.questions)||0;grouped[k].c+=Number(row.correct)||0;});
     Object.values(grouped).forEach(x=>{const pct=x.q?Math.round(x.c/x.q*100):0;const row=make("div","hub-subject-stat");row.append(make("span","",x.subject||"Subject"));const bar=make("div","hub-bar");const fill=make("span","");fill.style.width=pct+"%";bar.append(fill);row.append(bar,make("strong","",pct+"%"));subjects.append(row);});
     if(!Object.keys(grouped).length)subjects.append(make("p","hub-empty","Log practice to see subject-level accuracy."));
   }
