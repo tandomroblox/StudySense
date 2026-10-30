@@ -751,7 +751,13 @@
   });
   async function renderAnalytics() {
     const data=await safeApi("/api/analytics");const summary=$("hubAnalyticsSummary");summary.replaceChildren();
+    const prefData=await safeApi("/api/preferences");
+    const weekStart=new Date();weekStart.setHours(0,0,0,0);weekStart.setDate(weekStart.getDate()-((weekStart.getDay()+6)%7));
+    const weekMinutes=(data.study.recent||[]).filter(x=>new Date(x.started_at)>=weekStart).reduce((n,x)=>n+(Number(x.duration_minutes)||0),0);
+    const weeklyGoal=Number(prefData.preferences?.weekly_goal_minutes)||600;
     const cards=[
+      ["Weekly goal",Math.min(100,Math.round(weekMinutes/weeklyGoal*100))+"%"],
+      ["This week",weekMinutes+" / "+weeklyGoal+" min"],
       ["Practice accuracy",data.practice.accuracy+"%"],
       ["Questions attempted",data.practice.questions],
       ["Study time",Math.floor(data.study.total_minutes/60)+"h "+(data.study.total_minutes%60)+"m"],
@@ -834,7 +840,7 @@
   $("hubExportData").addEventListener("click",async()=>{
     const button=$("hubExportData");button.disabled=true;
     try{
-      const routes=["/api/profile","/api/exams","/api/chapters","/api/tasks","/api/practice/logs","/api/calendar","/api/mistakes","/api/study-sessions","/api/preferences","/api/analytics"];
+      const routes=["/api/profile","/api/exams","/api/chapters","/api/tasks","/api/practice","/api/calendar","/api/mistakes","/api/study-sessions","/api/preferences","/api/analytics"];
       const entries=await Promise.all(routes.map(async route=>[route,await safeApi(route)]));
       const blob=new Blob([JSON.stringify({exported_at:new Date().toISOString(),product:"StudySense",data:Object.fromEntries(entries)},null,2)],{type:"application/json"});
       const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="studysense-data-export.json";a.click();URL.revokeObjectURL(url);
