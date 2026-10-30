@@ -656,6 +656,181 @@ export default {
       catch { return json({error:"Could not save practice result. Check the learning tools migration."},500); }
     }
 
+
+    // Calendar events, mistake notebook, study history, preferences, and analytics.
+    if (url.pathname === "/api/calendar" || url.pathname.startsWith("/api/calendar/")) {
+      const session = await readSession(request, env.SESSION_SECRET);
+      if (!session) return json({ error: "Please sign in to use your calendar." }, 401);
+      if (url.pathname === "/api/calendar" && request.method === "GET") {
+        try {
+          const rows = await env.DB.prepare("SELECT id,title,event_type,starts_at,ends_at,notes,completed,created_at FROM calendar_events WHERE user_id=? ORDER BY starts_at LIMIT 500").bind(session.sub).all();
+          return json({ events: rows.results || [] });
+        } catch { return json({ error: "Calendar is not ready yet. Check migration 0007." }, 503); }
+      }
+      if (url.pathname === "/api/calendar" && request.method === "POST") {
+        const b = await bodyJson(request);
+        const title = typeof b?.title === "string" ? b.title.trim() : "";
+        const type = typeof b?.event_type === "string" ? b.event_type : "study";
+        const start = typeof b?.starts_at === "string" ? b.starts_at : "";
+        const end = typeof b?.ends_at === "string" && b.ends_at ? b.ends_at : null;
+        const notes = typeof b?.notes === "string" ? b.notes.trim() : "";
+        if (!title || title.length > 160 || !["study","assignment","revision","personal"].includes(type) ||
+            !/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}/.test(start) || (end && (!/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}/.test(end) || end <= start)) || notes.length > 1000) {
+          return json({ error: "Enter a title, valid date/time, event type, and notes under 1,000 characters." }, 400);
+        }
+        const id = crypto.randomUUID();
+        try {
+          await env.DB.prepare("INSERT INTO calendar_events(id,user_id,title,event_type,starts_at,ends_at,notes) VALUES(?,?,?,?,?,?,?)").bind(id,session.sub,title,type,start,end,notes).run();
+          return json({ event: { id,title,event_type:type,starts_at:start,ends_at:end,notes,completed:0 } }, 201);
+        } catch { return json({ error: "Could not save the calendar event." }, 500); }
+      }
+      const eventMatch = url.pathname.match(/^\\/api\\/calendar\\/([0-9a-f-]{36})$/i);
+      if (eventMatch && request.method === "PATCH") {
+        const b = await bodyJson(request);
+        const completed = b?.completed;
+        if (typeof completed !== "boolean") return json({ error: "Event completion must be true or false." }, 400);
+        try {
+          const r = await env.DB.prepare("UPDATE calendar_events SET completed=?,updated_at=datetime('now') WHERE id=? AND user_id=?").bind(completed?1:0,eventMatch[1],session.sub).run();
+          if (!r.meta?.changes) return json({ error: "Calendar event not found." }, 404);
+          return json({ ok: true });
+        } catch { return json({ error: "Could not update the calendar event." }, 500); }
+      }
+      if (eventMatch && request.method === "DELETE") {
+        try {
+          const r = await env.DB.prepare("DELETE FROM calendar_events WHERE id=? AND user_id=?").bind(eventMatch[1],session.sub).run();
+          if (!r.meta?.changes) return json({ error: "Calendar event not found." }, 404);
+          return json({ ok: true });
+        } catch { return json({ error: "Could not delete the calendar event." }, 500); }
+      }
+      return json({ error: "API route not found." }, 404);
+    }
+
+    if (url.pathname === "/api/mistakes" || url.pathname.startsWith("/api/mistakes/")) {
+      const session = await readSession(request, env.SESSION_SECRET);
+      if (!session) return json({ error: "Please sign in to use your mistake notebook." }, 401);
+      if (url.pathname === "/api/mistakes" && request.method === "GET") {
+        try {
+          const rows = await env.DB.prepare("SELECT id,subject,topic,question,user_answer,correct_answer,explanation,source,mastered,created_at FROM mistake_notebook WHERE user_id=? ORDER BY mastered ASC,created_at DESC LIMIT 300").bind(session.sub).all();
+          return json({ mistakes: rows.results || [] });
+        } catch { return json({ error: "The mistake notebook is not ready yet. Check migration 0007." }, 503); }
+      }
+      if (url.pathname === "/api/mistakes" && request.method === "POST") {
+        const b = await bodyJson(request);
+        const subject = typeof b?.subject === "string" ? b.subject.trim() : "";
+        const topic = typeof b?.topic === "string" ? b.topic.trim() : "";
+        const question = typeof b?.question === "string" ? b.question.trim() : "";
+        const userAnswer = typeof b?.user_answer === "string" ? b.user_answer.trim() : "";
+        const correctAnswer = typeof b?.correct_answer === "string" ? b.correct_answer.trim() : "";
+        const explanation = typeof b?.explanation === "string" ? b.explanation.trim() : "";
+        const source = typeof b?.source === "string" && ["manual","practice","mock-test","ai"].includes(b.source) ? b.source : "manual";
+        if (!subject || subject.length > 80 || topic.length > 180 || !question || question.length > 3000 ||
+            userAnswer.length > 2000 || correctAnswer.length > 2000 || explanation.length > 3000) {
+          return json({ error: "Add a subject and question. Keep each answer/explanation within the stated limits." }, 400);
+        }
+        const id = crypto.randomUUID();
+        try {
+          await env.DB.prepare("INSERT INTO mistake_notebook(id,user_id,subject,topic,question,user_answer,correct_answer,explanation,source) VALUES(?,?,?,?,?,?,?,?,?)").bind(id,session.sub,subject,topic,question,userAnswer,correctAnswer,explanation,source).run();
+          return json({ mistake: { id,subject,topic,question,user_answer:userAnswer,correct_answer:correctAnswer,explanation,source,mastered:0 } }, 201);
+        } catch { return json({ error: "Could not save this mistake." }, 500); }
+      }
+      const mistakeMatch = url.pathname.match(/^\\/api\\/mistakes\\/([0-9a-f-]{36})$/i);
+      if (mistakeMatch && request.method === "PATCH") {
+        const b = await bodyJson(request);
+        if (typeof b?.mastered !== "boolean") return json({ error: "Mastered must be true or false." }, 400);
+        try {
+          const r = await env.DB.prepare("UPDATE mistake_notebook SET mastered=?,updated_at=datetime('now') WHERE id=? AND user_id=?").bind(b.mastered?1:0,mistakeMatch[1],session.sub).run();
+          if (!r.meta?.changes) return json({ error: "Mistake not found." }, 404);
+          return json({ ok: true });
+        } catch { return json({ error: "Could not update this mistake." }, 500); }
+      }
+      if (mistakeMatch && request.method === "DELETE") {
+        try {
+          const r = await env.DB.prepare("DELETE FROM mistake_notebook WHERE id=? AND user_id=?").bind(mistakeMatch[1],session.sub).run();
+          if (!r.meta?.changes) return json({ error: "Mistake not found." }, 404);
+          return json({ ok: true });
+        } catch { return json({ error: "Could not delete this mistake." }, 500); }
+      }
+      return json({ error: "API route not found." }, 404);
+    }
+
+    if (url.pathname === "/api/study-sessions" && ["GET","POST"].includes(request.method)) {
+      const session = await readSession(request, env.SESSION_SECRET);
+      if (!session) return json({ error: "Please sign in to track study sessions." }, 401);
+      if (request.method === "GET") {
+        try {
+          const rows = await env.DB.prepare("SELECT id,subject,topic,started_at,duration_minutes,session_type FROM study_sessions WHERE user_id=? ORDER BY started_at DESC LIMIT 500").bind(session.sub).all();
+          return json({ sessions: rows.results || [] });
+        } catch { return json({ error: "Study history is not ready yet. Check migration 0007." }, 503); }
+      }
+      const b = await bodyJson(request);
+      const subject = typeof b?.subject === "string" ? b.subject.trim() : "";
+      const topic = typeof b?.topic === "string" ? b.topic.trim() : "";
+      const started = typeof b?.started_at === "string" ? b.started_at : "";
+      const duration = Number(b?.duration_minutes);
+      const type = typeof b?.session_type === "string" && ["focus","revision","class","other"].includes(b.session_type) ? b.session_type : "focus";
+      if (subject.length > 80 || topic.length > 180 || !/^\\d{4}-\\d{2}-\\d{2}T/.test(started) || !Number.isInteger(duration) || duration < 1 || duration > 1440) {
+        return json({ error: "Enter a valid start time and duration between 1 and 1,440 minutes." }, 400);
+      }
+      const id = crypto.randomUUID();
+      try {
+        await env.DB.prepare("INSERT INTO study_sessions(id,user_id,subject,topic,started_at,duration_minutes,session_type) VALUES(?,?,?,?,?,?,?)").bind(id,session.sub,subject,topic,started,duration,type).run();
+        return json({ session: { id,subject,topic,started_at:started,duration_minutes:duration,session_type:type } }, 201);
+      } catch { return json({ error: "Could not save this study session." }, 500); }
+    }
+
+    if (url.pathname === "/api/preferences" && ["GET","PATCH"].includes(request.method)) {
+      const session = await readSession(request, env.SESSION_SECRET);
+      if (!session) return json({ error: "Please sign in to manage preferences." }, 401);
+      if (request.method === "GET") {
+        try {
+          await env.DB.prepare("INSERT OR IGNORE INTO user_preferences(user_id) VALUES(?)").bind(session.sub).run();
+          const p = await env.DB.prepare("SELECT theme,notifications_enabled,reminder_time,weekly_goal_minutes FROM user_preferences WHERE user_id=?").bind(session.sub).first();
+          return json({ preferences: p });
+        } catch { return json({ error: "Preferences are not ready yet. Check migration 0007." }, 503); }
+      }
+      const b = await bodyJson(request);
+      const theme = ["dark","light","system"].includes(b?.theme) ? b.theme : "dark";
+      const enabled = typeof b?.notifications_enabled === "boolean" ? (b.notifications_enabled?1:0) : 1;
+      const reminder = typeof b?.reminder_time === "string" && /^([01]\\d|2[0-3]):[0-5]\\d$/.test(b.reminder_time) ? b.reminder_time : "18:00";
+      const goal = Number.isInteger(Number(b?.weekly_goal_minutes)) && Number(b.weekly_goal_minutes)>=30 && Number(b.weekly_goal_minutes)<=10080 ? Number(b.weekly_goal_minutes) : 600;
+      try {
+        await env.DB.prepare("INSERT INTO user_preferences(user_id,theme,notifications_enabled,reminder_time,weekly_goal_minutes,updated_at) VALUES(?,?,?,?,?,datetime('now')) ON CONFLICT(user_id) DO UPDATE SET theme=excluded.theme,notifications_enabled=excluded.notifications_enabled,reminder_time=excluded.reminder_time,weekly_goal_minutes=excluded.weekly_goal_minutes,updated_at=datetime('now')").bind(session.sub,theme,enabled,reminder,goal).run();
+        return json({ ok: true, preferences: { theme,notifications_enabled:enabled,reminder_time:reminder,weekly_goal_minutes:goal } });
+      } catch { return json({ error: "Could not save preferences." }, 500); }
+    }
+
+    if (url.pathname === "/api/analytics" && request.method === "GET") {
+      const session = await readSession(request, env.SESSION_SECRET);
+      if (!session) return json({ error: "Please sign in to view analytics." }, 401);
+      try {
+        const [exams, chapters, practice, tasks, sessions, mistakes] = await Promise.all([
+          env.DB.prepare("SELECT id,name,exam_date FROM exams WHERE user_id=? ORDER BY exam_date").bind(session.sub).all(),
+          env.DB.prepare("SELECT subject,status FROM chapters WHERE user_id=?").bind(session.sub).all(),
+          env.DB.prepare("SELECT subject,topic,questions,correct,practiced_on FROM practice_logs WHERE user_id=? ORDER BY practiced_on").bind(session.sub).all(),
+          env.DB.prepare("SELECT completed FROM tasks WHERE user_id=?").bind(session.sub).all(),
+          env.DB.prepare("SELECT subject,topic,started_at,duration_minutes FROM study_sessions WHERE user_id=? ORDER BY started_at DESC LIMIT 500").bind(session.sub).all(),
+          env.DB.prepare("SELECT subject,topic,mastered FROM mistake_notebook WHERE user_id=?").bind(session.sub).all()
+        ]);
+        const p = practice.results || [], s = sessions.results || [], ch = chapters.results || [];
+        const totalQuestions = p.reduce((n,x)=>n+(Number(x.questions)||0),0);
+        const correctAnswers = p.reduce((n,x)=>n+(Number(x.correct)||0),0);
+        const totalMinutes = s.reduce((n,x)=>n+(Number(x.duration_minutes)||0),0);
+        const bySubject = {};
+        for (const x of p) { const k=x.subject||"Other"; bySubject[k] ||= {subject:k,questions:0,correct:0}; bySubject[k].questions += Number(x.questions)||0; bySubject[k].correct += Number(x.correct)||0; }
+        for (const x of s) { const k=x.subject||"Unspecified"; bySubject[k] ||= {subject:k,questions:0,correct:0}; bySubject[k].study_minutes=(bySubject[k].study_minutes||0)+(Number(x.duration_minutes)||0); }
+        return json({
+          exams: exams.results || [], chapters: ch,
+          practice: { questions:totalQuestions,correct:correctAnswers,accuracy:totalQuestions?Math.round(correctAnswers/totalQuestions*100):0,logs:p },
+          tasks: { total:(tasks.results||[]).length,completed:(tasks.results||[]).filter(x=>Number(x.completed)===1).length },
+          study: { sessions:s.length,total_minutes:totalMinutes,by_subject:Object.values(bySubject),recent:s.slice(0,30) },
+          mistakes: { total:(mistakes.results||[]).length,mastered:(mistakes.results||[]).filter(x=>Number(x.mastered)===1).length }
+        });
+      } catch (error) {
+        console.error("StudySense analytics failed", { message:error instanceof Error?error.message:String(error) });
+        return json({ error: "Could not calculate analytics. Check that migration 0007 is applied." }, 503);
+      }
+    }
+
     if (url.pathname.startsWith("/api/tasks")) {
       const session = await readSession(request, env.SESSION_SECRET);
       if (!session) return json({ error: "Please sign in to access your tasks." }, 401);
