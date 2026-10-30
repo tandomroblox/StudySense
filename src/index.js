@@ -390,7 +390,7 @@ export default {
         "When a question includes a correction or a specific qualifier, address that exact point rather than agreeing automatically. Never accept a user correction without checking it."
       ].join(" ");
       try {
-        const result = await env.AI.run("@cf/meta/llama-3.1-8b-fast-v2", {
+        const result = await env.AI.run("@cf/meta/llama-3.3-70b-instruct-fp8-fast", {
           messages: [
             { role: "system", content: systemPrompt + (grade && grade >= 1 && grade <= 12 ? " The user is a student in class/grade " + grade + " where relevant; do not restrict the topics they can ask about." : "") },
             ...messages
