@@ -83,5 +83,51 @@
   });
 
   if (refresh) refresh.addEventListener("click", requestStatus);
+
+  async function loadCloudDevices() {
+    const cloudStatus = document.getElementById("cloudMonitoringStatus");
+    const cloudDevices = document.getElementById("cloudMonitoringDevices");
+    if (!cloudStatus || !cloudDevices) return;
+    try {
+      const response = await fetch("/api/monitoring/devices", { credentials: "same-origin", cache: "no-store" });
+      const data = await response.json();
+      if (response.status === 401) {
+        cloudStatus.textContent = "Sign in to StudySense to view device activity synced to your account.";
+        return;
+      }
+      if (!response.ok) throw new Error(data.error || "Could not load device activity.");
+      cloudDevices.replaceChildren();
+      if (!Array.isArray(data.devices) || data.devices.length === 0) {
+        cloudStatus.textContent = "No devices have synced yet. Enable account sync in the Windows or Android companion.";
+        return;
+      }
+      cloudStatus.textContent = "Your account has " + data.devices.length + " connected device(s).";
+      for (const device of data.devices) {
+        const card = document.createElement("div");
+        const title = document.createElement("h3");
+        title.textContent = (device.device_name || device.platform || "Device") + " · " + String(device.platform || "").toUpperCase();
+        const seen = document.createElement("p");
+        seen.textContent = "Last sync: " + new Date(device.last_seen_at + "Z").toLocaleString();
+        const rows = (data.usage || []).filter(x => x.device_id === device.id).slice(0, 7);
+        const summary = document.createElement("p");
+        summary.textContent = rows.length ? rows.map(x => x.day + ": " + Math.round(Object.values(x.apps || {}).reduce((a,b)=>a+(Number(b)||0),0)/60) + "m apps, " + Math.round(Object.values(x.websites || {}).reduce((a,b)=>a+(Number(b)||0),0)/60) + "m websites").join(" · ") : "No daily snapshots yet.";
+        const unlink = document.createElement("button");
+        unlink.type = "button";
+        unlink.className = "source-button";
+        unlink.textContent = "Unlink device";
+        unlink.addEventListener("click", async () => {
+          if (!confirm("Unlink this device and delete its synced monitoring history from your StudySense account?")) return;
+          const result = await fetch("/api/monitoring/devices/" + encodeURIComponent(device.id), { method: "DELETE", credentials: "same-origin" });
+          if (result.ok) loadCloudDevices();
+          else cloudStatus.textContent = "Could not unlink this device.";
+        });
+        card.append(title, seen, summary, unlink);
+        cloudDevices.appendChild(card);
+      }
+    } catch (error) {
+      cloudStatus.textContent = error && error.message ? error.message : "Could not load synced device activity.";
+    }
+  }
+  loadCloudDevices();
   requestStatus();
 })();
