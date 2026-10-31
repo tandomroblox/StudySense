@@ -1,19 +1,40 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#0b1020">
-  <meta name="description" content="StudySense — a focused study space for planning, exams, revision and learning.">
-  <link rel="icon" type="image/svg+xml" href="/icon.svg">
-  <link rel="apple-touch-icon" href="/icon.svg">
-  <link rel="manifest" href="/manifest.webmanifest">
-  <title>StudySense</title>
-  <link rel="stylesheet" href="/style.css">
-  <link rel="stylesheet" href="/study-tools.css">
-</head>
-<body data-page="dashboard">
-  <div id="appRoot"><div class="app-loading" role="status">Loading your study space…</div></div>
-  <script src="/app-shell.js" defer></script>
-</body>
-</html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0b1020"><meta name="description" content="StudySense — a focused study space for planning, exams, revision and learning."><link rel="icon" href="/icon.svg"><link rel="stylesheet" href="/style.css"><title>StudySense · Study smarter</title></head><body class="public-home"><main id="publicLanding" class="public-landing">
+      <section class="landing-hero">
+        <div class="landing-hero-copy">
+          <p class="eyebrow">YOUR STUDY SPACE, FINALLY IN SYNC</p>
+          <h1>Study smarter.<br><span>Feel ready.</span></h1>
+          <p class="landing-lede">One place to plan your time, stay on top of exams, track your syllabus and get help when a topic gets difficult.</p>
+          <div class="landing-actions">
+            <button type="button" class="landing-primary" onclick="location.href='/login.html?mode=register'">Get started free <span aria-hidden="true">↗</span></button>
+            <a class="landing-secondary" href="#features">Explore features <span aria-hidden="true">↓</span></a>
+          </div>
+          <p class="landing-footnote">Free to get started · Your progress stays with your account</p>
+        </div>
+        <div class="landing-preview" aria-label="StudySense dashboard preview">
+          <div class="preview-window">
+            <div class="preview-top"><span class="preview-dots"><i></i><i></i><i></i></span><span>STUDYSENSE / OVERVIEW</span><span class="preview-live">● LIVE</span></div>
+            <div class="preview-greeting"><span>YOUR PERSONAL STUDY DASHBOARD</span><strong>Make today count.</strong><small>A clear view of what matters next.</small></div>
+            <div class="preview-stats"><div><small>EXAM READINESS</small><b>82<span>%</span></b><i><em style="width:82%"></em></i></div><div><small>CHAPTERS DONE</small><b>24<span>/ 30</span></b><i><em style="width:80%"></em></i></div></div>
+            <div class="preview-task-head"><strong>Today's plan</strong><span>3 tasks</span></div>
+            <div class="preview-task"><span class="preview-check">✓</span><span><b>Revise chemical reactions</b><small>Science · 25 min</small></span><span class="preview-tag">FOCUS</span></div>
+            <div class="preview-task"><span class="preview-empty"></span><span><b>Complete algebra practice</b><small>Mathematics · 30 min</small></span></div>
+            <div class="preview-task"><span class="preview-empty"></span><span><b>Review history notes</b><small>Social Science · 20 min</small></span></div>
+          </div>
+          <div class="preview-float"><span>✦</span><div><b>Your next step</b><small>One task at a time.</small></div></div>
+        </div>
+      </section>
+      <section id="features" class="landing-features">
+        <div class="landing-section-heading"><p class="eyebrow">EVERYTHING IN ONE WORKSPACE</p><h2>Less juggling.<br><span>More learning.</span></h2><p>Tools that work together, so you can spend less time organising and more time understanding.</p></div>
+        <div class="feature-grid">
+          <article class="feature-card feature-wide"><span class="feature-icon">◷</span><p class="feature-kicker">PLAN & FOCUS</p><h3>A plan you can actually follow.</h3><p>Organise tasks, build a study routine and use focus sessions to stay on track.</p><span class="feature-art feature-calendar"><b>MON</b><b>TUE</b><b>WED</b><b>THU</b><i>✓</i><i></i><i>✓</i><i></i></span></article>
+          <article class="feature-card"><span class="feature-icon">◎</span><p class="feature-kicker">EXAM READINESS</p><h3>Know where you stand.</h3><p>Keep upcoming exams, chapter progress and readiness in view.</p></article>
+          <article class="feature-card"><span class="feature-icon">▤</span><p class="feature-kicker">SYLLABUS TRACKER</p><h3>Every chapter has a place.</h3><p>Track what you've started, revised and mastered.</p></article>
+          <article class="feature-card"><span class="feature-icon">✳</span><p class="feature-kicker">AI STUDY COMPANION</p><h3>Ask when you're stuck.</h3><p>Get explanations and study help in a natural conversation.</p></article>
+          <article class="feature-card"><span class="feature-icon">↻</span><p class="feature-kicker">PRACTICE & REVISION</p><h3>Make learning stick.</h3><p>Use flashcards, practice logs and spaced revision to revisit what matters.</p></article>
+          <article class="feature-card feature-wide feature-time"><span class="feature-icon">⌁</span><p class="feature-kicker">TIME GUARD</p><h3>Be intentional with your screen time.</h3><p>Set boundaries for entertainment and keep your attention on what you planned.</p><span class="time-orbit"><i>15</i><small>MIN FOCUS</small><b>↗</b><i>35</i><small>MIN RESET</small></span></article>
+        </div>
+      </section>
+      <section class="landing-cta"><p class="eyebrow">YOUR NEXT CHAPTER STARTS HERE</p><h2>Make room for better study days.</h2><p>Bring your plans, progress and practice together with StudySense.</p><button type="button" class="landing-primary" data-open-auth="register">Create your free account <span aria-hidden="true">↗</span></button></section>
+      <footer class="landing-footer"><a class="brand" href="/"><img class="brand-icon" src="/icon.svg" alt="" width="25" height="25"><span class="brand-name">Study<span>Sense</span></span></a><span>Plan with purpose. Learn with confidence.</span></footer>
+    </main><script>document.querySelectorAll('[data-open-auth]').forEach(b=>b.addEventListener('click',()=>location.href='/login.html?mode='+encodeURIComponent(b.dataset.openAuth||'register')));</script></body></html>

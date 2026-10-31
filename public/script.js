@@ -81,6 +81,7 @@ if (curriculumGrade) {
 }
 
 const publicLanding = document.querySelector("#publicLanding");
+const isAuthPage = window.location.pathname === "/login.html";
 const landingSignIn = document.querySelector("#landingSignIn");
 const authLoadingPanel = document.querySelector("#authLoadingPanel");
 const authPanel = document.querySelector("#authPanel");
@@ -186,32 +187,44 @@ function readSessionHintUser() {
   }
 }
 function openAuth(mode = "login") {
+  if (!isAuthPage) {
+    window.location.assign("/login.html?mode=" + encodeURIComponent(mode));
+    return;
+  }
+  authPanel.hidden = false;
+  appPanel.hidden = true;
+  setAuthMode(mode);
+}
+if (isAuthPage) {
+  document.body.classList.add("auth-page");
   publicLanding.hidden = true;
   authPanel.hidden = false;
   appPanel.hidden = true;
-  landingSignIn.hidden = false;
-  setAuthMode(mode);
-  authPanel.scrollIntoView({ behavior: "smooth", block: "center" });
+  const requestedMode = new URLSearchParams(location.search).get("mode");
+  setAuthMode(requestedMode === "register" ? "register" : "login");
 }
-landingSignIn.addEventListener("click", event => { event.preventDefault(); openAuth("login"); });
-document.querySelectorAll("[data-open-auth]").forEach(button => button.addEventListener("click", () => openAuth(button.dataset.openAuth || "register")));
 
 function showSignedOut(message = "") {
   clearSessionHint();
+  if (!isAuthPage) {
+    const returnTo = encodeURIComponent(location.pathname + location.search);
+    window.location.replace("/login.html?mode=login&return=" + returnTo);
+    return;
+  }
   authLoadingPanel.hidden = true;
   document.body.classList.remove("is-signed-in");
-  authPanel.hidden = Boolean(!message);
-  publicLanding.hidden = Boolean(message);
-  landingSignIn.hidden = false;
+  authPanel.hidden = false;
   appPanel.hidden = true;
   connectGoogleButton.hidden = true;
   authMessage.textContent = message;
   tasks = [];
 }
 function showSignedIn(user) {
+  if (isAuthPage) {
+    window.location.replace("/index.html");
+    return;
+  }
   authLoadingPanel.hidden = true;
-  publicLanding.hidden = true;
-  landingSignIn.hidden = true;
   document.body.classList.add("is-signed-in");
   authPanel.hidden = true;
   appPanel.hidden = false;
@@ -248,8 +261,7 @@ logoutButton.addEventListener("click", async () => {
   logoutButton.disabled = true;
   try {
     await api("/api/auth/logout", { method: "POST" });
-    showSignedOut("You have signed out.");
-    setAuthMode("login");
+    window.location.replace("/login.html?mode=login");
   } catch (error) {
     taskMessage.textContent = error.message;
   } finally {
@@ -551,6 +563,7 @@ profileForm.addEventListener("submit",async e=>{e.preventDefault();const b=profi
 
 async function start() {
   const cachedUser = readSessionHintUser();
+  if (isAuthPage) { authLoadingPanel.hidden = true; authPanel.hidden = false; appPanel.hidden = true; }
   if (cachedUser) showSignedIn(cachedUser);
   try {
     const data = await api("/api/auth/me");
