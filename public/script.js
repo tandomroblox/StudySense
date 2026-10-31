@@ -80,6 +80,8 @@ if (curriculumGrade) {
   renderCurriculumLibrary();
 }
 
+const publicLanding = document.querySelector("#publicLanding");
+const landingSignIn = document.querySelector("#landingSignIn");
 const authLoadingPanel = document.querySelector("#authLoadingPanel");
 const authPanel = document.querySelector("#authPanel");
 const appPanel = document.querySelector("#appPanel");
@@ -183,11 +185,24 @@ function readSessionHintUser() {
     return null;
   }
 }
+function openAuth(mode = "login") {
+  publicLanding.hidden = true;
+  authPanel.hidden = false;
+  appPanel.hidden = true;
+  landingSignIn.hidden = false;
+  setAuthMode(mode);
+  authPanel.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+landingSignIn.addEventListener("click", event => { event.preventDefault(); openAuth("login"); });
+document.querySelectorAll("[data-open-auth]").forEach(button => button.addEventListener("click", () => openAuth(button.dataset.openAuth || "register")));
+
 function showSignedOut(message = "") {
   clearSessionHint();
   authLoadingPanel.hidden = true;
   document.body.classList.remove("is-signed-in");
-  authPanel.hidden = false;
+  authPanel.hidden = Boolean(!message);
+  publicLanding.hidden = Boolean(message);
+  landingSignIn.hidden = false;
   appPanel.hidden = true;
   connectGoogleButton.hidden = true;
   authMessage.textContent = message;
@@ -195,6 +210,8 @@ function showSignedOut(message = "") {
 }
 function showSignedIn(user) {
   authLoadingPanel.hidden = true;
+  publicLanding.hidden = true;
+  landingSignIn.hidden = true;
   document.body.classList.add("is-signed-in");
   authPanel.hidden = true;
   appPanel.hidden = false;
