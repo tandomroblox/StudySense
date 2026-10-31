@@ -445,3 +445,14 @@ body:not(.is-signed-in) .topbar .site-nav,body:not(.is-signed-in) .topbar .accou
 #authPanel { margin:0 auto 60px;scroll-margin-top:40px; }
 @media(max-width:850px) { .landing-hero { grid-template-columns:1fr;gap:28px;padding:55px 0 65px; }.landing-hero-copy { max-width:720px; }.landing-preview { width:min(600px,100%);margin:auto;padding-left:0; }.feature-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }.feature-wide { grid-column:span 2; } }
 @media(max-width:560px) { .public-landing { width:90%; }.landing-hero { min-height:0;padding:43px 0 58px; }.landing-hero h1 { font-size:54px;letter-spacing:-3px; }.landing-lede { font-size:15px; }.landing-actions { gap:17px; }.landing-primary { min-height:50px;padding:0 17px; }.landing-preview { padding:12px 0 25px; }.preview-window { padding:0 14px 15px;transform:none; }.preview-greeting strong { font-size:21px; }.preview-stats b { font-size:25px; }.preview-float { right:-4px; }.landing-features { padding:45px 0 60px; }.feature-grid { grid-template-columns:1fr; }.feature-wide { grid-column:span 1; }.feature-card { min-height:210px; }.feature-calendar,.time-orbit { opacity:.35; }.landing-cta { padding:40px 18px;margin-bottom:38px; }.landing-footer { align-items:flex-start;flex-direction:column; }.landing-signin { min-height:39px;padding:0 16px; } }
+
+/* Dedicated public authentication route */
+.auth-page { min-height:100vh; display:flex; flex-direction:column; }
+.auth-page .topbar,.auth-page .welcome,.auth-page #appPanel,.auth-page > .container > footer { display:none!important; }
+.auth-page .container { width:min(100%,520px); margin:auto; padding:28px 22px 56px; }
+.auth-page .auth-page-brand { width:min(100%,520px); margin:34px auto 8px; display:flex; align-items:center; justify-content:space-between; gap:16px; padding:0 22px; }
+.auth-page .auth-page-brand > a:last-child { color:#aab5d0; text-decoration:none; font-size:14px; }
+.auth-page .auth-panel { width:100%; margin:18px auto; }
+.auth-page #authLoadingPanel { display:none!important; }
+.auth-page #publicLanding { display:none!important; }
+@media(max-width:560px){.auth-page .auth-page-brand{margin-top:20px}.auth-page .container{padding-top:12px}}
