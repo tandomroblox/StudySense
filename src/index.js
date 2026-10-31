@@ -222,13 +222,13 @@ export default {
       const state = await verifyState(stateToken, env.SESSION_SECRET);
       const clearStateCookie = oauthStateCookie("", 0);
       if (!state || !savedState || stateToken !== savedState) {
-        return new Response(null, { status: 303, headers: { "location": new URL("/?google=invalid_state", request.url).toString(), "set-cookie": clearStateCookie, "cache-control": "no-store" } });
+        return new Response(null, { status: 303, headers: { "location": new URL("/login.html?google=invalid_state", request.url).toString(), "set-cookie": clearStateCookie, "cache-control": "no-store" } });
       }
       if (url.searchParams.has("error") || !url.searchParams.get("code")) {
-        return new Response(null, { status: 303, headers: { "location": new URL("/?google=cancelled", request.url).toString(), "set-cookie": clearStateCookie, "cache-control": "no-store" } });
+        return new Response(null, { status: 303, headers: { "location": new URL("/login.html?google=cancelled", request.url).toString(), "set-cookie": clearStateCookie, "cache-control": "no-store" } });
       }
       if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) {
-        return new Response(null, { status: 303, headers: { "location": new URL("/?google=not_configured", request.url).toString(), "set-cookie": clearStateCookie, "cache-control": "no-store" } });
+        return new Response(null, { status: 303, headers: { "location": new URL("/login.html?google=not_configured", request.url).toString(), "set-cookie": clearStateCookie, "cache-control": "no-store" } });
       }
       try {
         const identity = await googleIdentityFromCode(url.searchParams.get("code"), request, env, state.nonce);
@@ -236,7 +236,7 @@ export default {
         if (state.mode === "link") {
           const currentSession = await readSession(request, env.SESSION_SECRET);
           if (!currentSession || currentSession.sub !== state.userId) {
-            return new Response(null, { status: 303, headers: { "location": new URL("/?google=signin_required", request.url).toString(), "set-cookie": clearStateCookie, "cache-control": "no-store" } });
+            return new Response(null, { status: 303, headers: { "location": new URL("/login.html?google=signin_required", request.url).toString(), "set-cookie": clearStateCookie, "cache-control": "no-store" } });
           }
           const [existingGoogleUser, currentUser, emailUser] = await Promise.all([
             env.DB.prepare("SELECT id FROM users WHERE google_sub = ?").bind(identity.sub).first(),
@@ -245,20 +245,20 @@ export default {
           ]);
           if ((existingGoogleUser && existingGoogleUser.id !== currentSession.sub) ||
               (currentUser?.google_sub && currentUser.google_sub !== identity.sub)) {
-            return new Response(null, { status: 303, headers: { "location": new URL("/?google=already_linked", request.url).toString(), "set-cookie": clearStateCookie, "cache-control": "no-store" } });
+            return new Response(null, { status: 303, headers: { "location": new URL("/login.html?google=already_linked", request.url).toString(), "set-cookie": clearStateCookie, "cache-control": "no-store" } });
           }
           if (emailUser && emailUser.id !== currentSession.sub) {
-            return new Response(null, { status: 303, headers: { "location": new URL("/?google=email_conflict", request.url).toString(), "set-cookie": clearStateCookie, "cache-control": "no-store" } });
+            return new Response(null, { status: 303, headers: { "location": new URL("/login.html?google=email_conflict", request.url).toString(), "set-cookie": clearStateCookie, "cache-control": "no-store" } });
           }
           await env.DB.prepare("UPDATE users SET google_sub = ? WHERE id = ?").bind(identity.sub, currentSession.sub).run();
-          return new Response(null, { status: 303, headers: { "location": new URL("/?google=linked", request.url).toString(), "set-cookie": clearStateCookie, "cache-control": "no-store" } });
+          return new Response(null, { status: 303, headers: { "location": new URL("/login.html?google=linked", request.url).toString(), "set-cookie": clearStateCookie, "cache-control": "no-store" } });
         }
 
         user = await env.DB.prepare("SELECT id, email FROM users WHERE google_sub = ?").bind(identity.sub).first();
         if (!user) {
           const emailUser = await env.DB.prepare("SELECT id, email, google_sub FROM users WHERE email = ?").bind(identity.email).first();
           if (emailUser) {
-            return new Response(null, { status: 303, headers: { "location": new URL("/?google=link_required", request.url).toString(), "set-cookie": clearStateCookie, "cache-control": "no-store" } });
+            return new Response(null, { status: 303, headers: { "location": new URL("/login.html?google=link_required", request.url).toString(), "set-cookie": clearStateCookie, "cache-control": "no-store" } });
           }
           const id = crypto.randomUUID();
           await env.DB.prepare("INSERT INTO users (id, email, password_hash, google_sub) VALUES (?, ?, NULL, ?)").bind(id, identity.email, identity.sub).run();
@@ -275,7 +275,7 @@ export default {
 
         const token = await makeSession(user, env.SESSION_SECRET);
         const headers = new Headers({
-          "location": new URL("/", request.url).toString(),
+          "location": new URL("/index.html", request.url).toString(),
           "cache-control": "no-store"
         });
         headers.append("set-cookie", sessionCookie(token));
@@ -286,7 +286,7 @@ export default {
           name: error instanceof Error ? error.name : "UnknownError",
           message: error instanceof Error ? error.message : String(error)
         });
-        return new Response(null, { status: 303, headers: { "location": new URL("/?google=failed", request.url).toString(), "set-cookie": clearStateCookie, "cache-control": "no-store" } });
+        return new Response(null, { status: 303, headers: { "location": new URL("/login.html?google=failed", request.url).toString(), "set-cookie": clearStateCookie, "cache-control": "no-store" } });
       }
     }
 
