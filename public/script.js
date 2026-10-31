@@ -216,7 +216,7 @@ function showSignedOut(message = "") {
   authPanel.hidden = false;
   appPanel.hidden = true;
   connectGoogleButton.hidden = true;
-  authMessage.textContent = message;
+  if (message) authMessage.textContent = message;
   tasks = [];
 }
 function showSignedIn(user) {
