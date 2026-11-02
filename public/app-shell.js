@@ -14,7 +14,7 @@
   };
   const routeByPath = {
     "/": "dashboard",
-    "/index.html": "dashboard",
+    "/dashboard.html": "dashboard",
     "/planner.html": "planner",
     "/exams.html": "exams",
     "/syllabus.html": "syllabus",
