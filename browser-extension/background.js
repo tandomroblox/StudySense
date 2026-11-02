@@ -271,7 +271,7 @@ async function initialize() {
     // An expired cooldown must not carry its exhausted allowance into a new
     // ready phase, or the next tick would immediately start another 35 minutes.
     usedSeconds: cooldownActive ? Math.min(ALLOWANCE_SECONDS, Number(s.usedSeconds) || ALLOWANCE_SECONDS)
-      : (!sameRestrictionDay && s.phase !== "cooldown" ? 0 : (Number(s.usedSeconds) || 0)),
+      : (s.phase === "cooldown" || !sameRestrictionDay ? 0 : (Number(s.usedSeconds) || 0)),
     phaseEndsAt: cooldownActive ? Number(s.phaseEndsAt) : 0,
     lastTickAt: Date.now(),
     currentDomain: null,
