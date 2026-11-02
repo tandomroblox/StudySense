@@ -40,7 +40,8 @@
   const isStandaloneApp = () =>
     window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
 
-  const isAuthRoute = window.location.pathname === "/login.html";
+  // Cloudflare serves the dedicated auth page at both /login and /login.html.
+  const isAuthRoute = window.location.pathname === "/login.html" || window.location.pathname === "/login";
 
   function mountInstallBanner() {
     if (isAuthRoute || !root || isStandaloneApp() || installBannerDismissed || root.querySelector("#pwaInstallBanner")) return;
