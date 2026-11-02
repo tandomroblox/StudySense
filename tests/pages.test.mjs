@@ -17,6 +17,13 @@ const pages = {
 };
 
 test("Every StudySense destination is a standalone route using the shared shell", () => {
+  const home = read("public/index.html");
+  const login = read("public/login.html");
+  assert.match(home, /<body class="public-home">/);
+  assert.ok(home.includes("id=\"publicLanding\""));
+  assert.ok(!home.includes("id=\"authPanel\""));
+  assert.match(login, /<body data-page="dashboard" class="auth-page">/);
+  assert.ok(login.includes("id=\"authPanel\""));
   for (const [route, file] of Object.entries(pages)) {
     const html = read(file);
     assert.match(html, new RegExp('<body data-page="' + route + '"'));
