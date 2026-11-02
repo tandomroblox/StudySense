@@ -1,6 +1,6 @@
 const CACHE_NAME = "studysense-shell-v9";
 const APP_SHELL = [
-  "/", "/index.html", "/login.html", "/planner.html", "/exams.html", "/syllabus.html",
+  "/", "/index.html", "/dashboard.html", "/login.html", "/planner.html", "/exams.html", "/syllabus.html",
   "/learn.html", "/library.html", "/profile.html", "/time-guard.html", "/time-guard.css",
   "/app-shell.html", "/app-shell.js",
   "/style.css", "/script.js", "/syllabus.js", "/study-tools.css", "/study-tools.js",
@@ -43,7 +43,7 @@ self.addEventListener("fetch", event => {
     }).catch(async () => {
       const cached = await caches.match(request);
       if (cached) return cached;
-      if (request.mode === "navigate") return (await caches.match("/index.html")) || Response.error();
+      if (request.mode === "navigate") return (await caches.match("/dashboard.html")) || Response.error();
       return Response.error();
     })
   );
