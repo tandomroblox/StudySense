@@ -1,0 +1,37 @@
+{
+  "name": "studysense-desktop",
+  "version": "1.0.0",
+  "private": true,
+  "description": "StudySense desktop app with integrated workspace tabs",
+  "main": "main.cjs",
+  "scripts": {
+    "icons": "node scripts/build-icons.cjs",
+    "start": "electron .",
+    "dist:win": "npm run icons && electron-builder --win nsis"
+  },
+  "devDependencies": {
+    "electron": "^39.0.0",
+    "electron-builder": "^26.0.12",
+    "png-to-ico": "^2.1.8",
+    "sharp": "^0.34.5"
+  },
+  "build": {
+    "appId": "com.studysense.desktop",
+    "productName": "StudySense",
+    "directories": { "output": "dist", "buildResources": "assets" },
+    "files": ["main.cjs", "preload.cjs", "index.html", "renderer.js", "assets/icon.svg", "assets/icon.png", "assets/icon.ico"],
+    "win": {
+      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "icon": "assets/icon.ico",
+      "artifactName": "StudySense-Setup-${version}-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "StudySense"
+    }
+  }
+}
