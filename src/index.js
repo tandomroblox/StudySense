@@ -275,7 +275,7 @@ export default {
 
         const token = await makeSession(user, env.SESSION_SECRET);
         const headers = new Headers({
-          "location": new URL("/index.html", request.url).toString(),
+          "location": new URL("/dashboard.html", request.url).toString(),
           "cache-control": "no-store"
         });
         headers.append("set-cookie", sessionCookie(token));
