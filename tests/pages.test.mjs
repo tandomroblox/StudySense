@@ -7,7 +7,7 @@ import test from "node:test";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const read = name => fs.readFileSync(path.join(root, name), "utf8");
 const pages = {
-  dashboard: "public/index.html",
+  dashboard: "public/dashboard.html",
   planner: "public/planner.html",
   exams: "public/exams.html",
   syllabus: "public/syllabus.html",
