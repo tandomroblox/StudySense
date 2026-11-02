@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0b1020">
+<title>StudySense</title>
+<style>
+:root{color-scheme:dark;font-family:Inter,"Segoe UI",Arial,sans-serif;background:#0b1020;color:#edf1ff}*{box-sizing:border-box}
+body{margin:0;height:100vh;display:flex;flex-direction:column;overflow:hidden;background:#0b1020}
+.top{height:68px;flex:none;display:flex;align-items:center;gap:18px;padding:0 18px;background:#0d1428;border-bottom:1px solid #263253}
+.brand{display:flex;align-items:center;gap:10px;min-width:210px;font-size:21px;font-weight:800;color:#91a5ff;letter-spacing:-.6px}.brand img{width:36px;height:36px;border-radius:10px}
+.tabs{display:flex;align-items:center;gap:5px;flex:1;overflow-x:auto;scrollbar-width:thin}
+.tab{border:1px solid transparent;background:transparent;color:#aeb9d6;padding:10px 13px;border-radius:12px;font-size:13px;font-weight:700;white-space:nowrap;cursor:pointer}
+.tab:hover{background:#18233e;color:#fff}.tab[aria-selected=true]{background:#1b2747;border-color:#344775;color:#fff}
+.account{border:1px solid #34415f;border-radius:12px;padding:10px 13px;background:#202b47;color:#e7ecff;font-weight:700;cursor:pointer;white-space:nowrap}
+.workspace{position:relative;flex:1;min-height:0;background:#0b1020}webview{width:100%;height:100%;display:flex;background:#0b1020}
+.status{height:24px;flex:none;padding:4px 12px;background:#0d1428;border-top:1px solid #263253;color:#8492b8;font-size:11px}
+@media(max-width:1100px){.brand{min-width:auto}.brand span{display:none}.top{gap:10px;padding:0 10px}.tab{padding:9px 10px}}
+</style>
+</head>
+<body>
+<header class="top">
+<div class="brand"><img src="assets/icon.svg" alt=""><span>StudySense</span></div>
+<nav class="tabs" aria-label="StudySense workspace">
+<button class="tab" data-route="/" aria-selected="true">Overview</button>
+<button class="tab" data-route="/planner.html">Planner</button>
+<button class="tab" data-route="/exams.html">Exams</button>
+<button class="tab" data-route="/syllabus.html">Syllabus</button>
+<button class="tab" data-route="/learn.html">Learn</button>
+<button class="tab" data-route="/library.html">Library</button>
+<button class="tab" data-route="/time-guard.html">Time Guard</button>
+</nav>
+<button class="account" id="accountTab">Account ↗</button>
+</header>
+<main class="workspace"><webview id="workspaceView" src="https://studysense.studysenseapp.workers.dev/" partition="persist:studysense" allowpopups></webview></main>
+<footer class="status" id="status">StudySense desktop · Your account stays in this app</footer>
+<script src="renderer.js"></script>
+</body></html>
