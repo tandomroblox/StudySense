@@ -1,9 +1,9 @@
-const CACHE_NAME = "studysense-auth-layout-v7";
+const CACHE_NAME = "studysense-shell-v10";
 const APP_SHELL = [
   "/", "/index.html", "/dashboard.html", "/login.html", "/planner.html", "/exams.html", "/syllabus.html",
   "/learn.html", "/library.html", "/profile.html", "/time-guard.html", "/time-guard.css",
   "/app-shell.html", "/app-shell.js",
-  "/style.css", "/script.js", "/syllabus.js", "/study-tools.css", "/study-tools.js",
+  "/style.css", "/script.js", "/syllabus.js", "/auth.js", "/study-tools.css", "/study-tools.js",
   "/manifest.webmanifest", "/icon.svg"
 ];
 
@@ -23,7 +23,7 @@ self.addEventListener("install", event => {
 
 self.addEventListener("activate", event => {
   event.waitUntil(
-    caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith("studysense-shell-") && key !== CACHE_NAME).map(key => caches.delete(key))))
+    caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith("studysense-") && key !== CACHE_NAME).map(key => caches.delete(key))))
   );
   self.clients.claim();
 });

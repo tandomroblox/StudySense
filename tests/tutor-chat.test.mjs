@@ -37,7 +37,7 @@ test("The tutor API accepts bounded chat history and infers likely subject", () 
 });
 
 test("The offline cache is bumped for the updated authentication and chat experience", () => {
-  assert.ok(read("public/sw.js").includes('const CACHE_NAME = "studysense-shell-v9"'));
+  assert.ok(read("public/sw.js").includes('const CACHE_NAME = "studysense-shell-v10"'));
 });
 
 test("Calendar, mistake notebook, study sessions and analytics have authenticated API routes", () => {

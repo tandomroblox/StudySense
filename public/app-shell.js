@@ -200,9 +200,14 @@
         }
       } catch (_) {}
       setupNavigation();
-      await loadScript("/syllabus.js");
-      await loadScript("/script.js");
-      await loadScript("/study-tools.js");
+      if (isAuthRoute) {
+        // Keep the login page independent from the dashboard feature bundle.
+        await loadScript("/auth.js");
+      } else {
+        await loadScript("/syllabus.js");
+        await loadScript("/script.js");
+        await loadScript("/study-tools.js");
+      }
     } catch (error) {
       root.innerHTML = '<main class="container"><section class="card"><h1>StudySense could not load</h1><p class="muted"></p><a href="/index.html">Try the dashboard</a></section></main>';
       root.querySelector(".muted").textContent = error.message || "Please check your connection and reload.";
