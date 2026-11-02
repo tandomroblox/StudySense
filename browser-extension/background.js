@@ -249,6 +249,8 @@ async function pauseTracking() {
   await sendStateChanged();
 }
 async function resumeTracking() {
+  // Resolve an elapsed cooldown before restoring its blocking rules.
+  await tick();
   const s = await state();
   if ((s.trackMode || "selected") === "selected" && !(s.restrictedDomains || s.trackedDomains || []).length) {
     throw new Error("Add at least one restricted domain before resuming selected-site tracking.");
