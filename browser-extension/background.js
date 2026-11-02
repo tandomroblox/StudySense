@@ -133,7 +133,13 @@ function notifyCooldown() {
 async function sendStateChanged() {
   try { await chrome.runtime.sendMessage({ type: "state-changed" }); } catch (_) {}
 }
-async function tick() {
+let tickQueue = Promise.resolve();
+function tick() {
+  const next = tickQueue.then(tickOnce, tickOnce);
+  tickQueue = next.catch(() => {});
+  return next;
+}
+async function tickOnce() {
   const s = await state();
   const now = Date.now();
   const today = localDayKey(now);
@@ -209,6 +215,8 @@ function validDomainList(values) {
   return normalized;
 }
 async function configure(settings) {
+  // Account for the active interval before replacing the selected domains or mode.
+  await tick();
   const domains = validDomainList(settings.restrictedDomains);
   const trackMode = settings.trackMode === "all" ? "all" : "selected";
   if (trackMode === "selected" && domains.length === 0) throw new Error("Add at least one restricted domain or choose all-website tracking.");
@@ -228,6 +236,9 @@ async function configure(settings) {
     notificationsEnabled: settings.notificationsEnabled !== false,
     usageByDay: pruneHistory(current.usageByDay && typeof current.usageByDay === "object" ? current.usageByDay : {}, localDayKey())
   });
+  const nextState = await state();
+  const domain = await activeSite({ ...nextState, restrictedDomains: domains });
+  await chrome.storage.local.set({ currentDomain: domain, lastTickAt: Date.now() });
   await syncRules(domains, phase);
   await sendStateChanged();
 }
@@ -243,6 +254,9 @@ async function resumeTracking() {
     throw new Error("Add at least one restricted domain before resuming selected-site tracking.");
   }
   await chrome.storage.local.set({ enabled: true, lastTickAt: Date.now(), currentDomain: null });
+  const resumed = await state();
+  const domain = await activeSite(resumed);
+  await chrome.storage.local.set({ currentDomain: domain, lastTickAt: Date.now() });
   await syncRules(s.restrictedDomains || s.trackedDomains || [], s.phase === "cooldown" ? "cooldown" : "ready");
   await sendStateChanged();
 }
