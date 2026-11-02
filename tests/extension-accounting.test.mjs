@@ -217,3 +217,31 @@ test("active-tab time is added to daily site totals while the browser is focused
   assert.equal(storageState.currentDomain, "youtube.com");
   focusedWindow = false;
 });
+
+
+test("overlapping browser events cannot open duplicate cooldown popups", async () => {
+  const now = Date.now();
+  focusedWindow = true;
+  openTabs.length = 0;
+  openTabs.push({ id: 31, url: "https://www.instagram.com/" });
+  storageState = {
+    restrictedDomains: ["instagram.com"],
+    trackedDomains: ["instagram.com"],
+    trackMode: "selected",
+    enabled: true,
+    phase: "ready",
+    usedSeconds: 899,
+    phaseEndsAt: 0,
+    restrictionDay: api.localDayKey(now),
+    lastTickAt: now - 2000,
+    currentDomain: "instagram.com",
+    usageByDay: {},
+    notificationsEnabled: false
+  };
+  const before = createdWindows.length;
+  await Promise.all([api.tick(), api.tick(), api.tick()]);
+  const popups = createdWindows.slice(before).filter(options => options.url.endsWith("/break.html"));
+  assert.equal(storageState.phase, "cooldown");
+  assert.equal(popups.length, 1);
+  focusedWindow = false;
+});
