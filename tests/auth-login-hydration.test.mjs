@@ -12,6 +12,7 @@ const dashboard = read("public/script.js");
 const html = read("public/app-shell.html");
 
 test("The login route loads a dedicated auth module, not the dashboard bundle", () => {
+  assert.match(shell, /window\.location\.pathname === "\/login\.html" \|\| window\.location\.pathname === "\/login"/);
   assert.match(shell, /if \(isAuthRoute\)[\s\S]*?loadScript\("\/auth\.js"\)/);
   const authStart = shell.indexOf("if (isAuthRoute)");
   const authEnd = shell.indexOf("} else {", authStart);
