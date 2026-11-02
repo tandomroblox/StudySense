@@ -197,7 +197,7 @@ function openAuth(mode = "login") {
 }
 if (isAuthPage) {
   document.body.classList.add("auth-page");
-  publicLanding.hidden = true;
+  if (publicLanding) publicLanding.hidden = true;
   authPanel.hidden = false;
   appPanel.hidden = true;
   const requestedMode = new URLSearchParams(location.search).get("mode");
