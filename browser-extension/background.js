@@ -259,21 +259,30 @@ async function initialize() {
     : (Array.isArray(s.trackedDomains) ? s.trackedDomains : []);
   const seedDefaults = storedDomains.length === 0;
   const domains = seedDefaults ? [...DEFAULT_RESTRICTED_DOMAINS] : storedDomains;
+  const cooldownActive = s.phase === "cooldown" && Date.now() < (Number(s.phaseEndsAt) || 0);
+  const today = localDayKey();
+  const sameRestrictionDay = (s.restrictionDay || today) === today;
+  const enabled = seedDefaults ? true : (typeof s.enabled === "boolean" ? s.enabled : domains.length > 0);
   await chrome.storage.local.set({
     restrictedDomains: domains,
     trackedDomains: domains,
     trackMode: s.trackMode || "selected",
-    phase: s.phase === "cooldown" && Date.now() < (Number(s.phaseEndsAt) || 0) ? "cooldown" : "ready",
-    usedSeconds: Number(s.usedSeconds) || 0,
-    phaseEndsAt: Number(s.phaseEndsAt) || 0,
+    phase: cooldownActive ? "cooldown" : "ready",
+    // An expired cooldown must not carry its exhausted allowance into a new
+    // ready phase, or the next tick would immediately start another 35 minutes.
+    usedSeconds: cooldownActive ? Math.min(ALLOWANCE_SECONDS, Number(s.usedSeconds) || ALLOWANCE_SECONDS)
+      : (!sameRestrictionDay && s.phase !== "cooldown" ? 0 : (Number(s.usedSeconds) || 0)),
+    phaseEndsAt: cooldownActive ? Number(s.phaseEndsAt) : 0,
     lastTickAt: Date.now(),
     currentDomain: null,
     usageByDay: s.usageByDay && typeof s.usageByDay === "object" ? s.usageByDay : {},
-    enabled: seedDefaults ? true : (typeof s.enabled === "boolean" ? s.enabled : domains.length > 0),
-    restrictionDay: s.restrictionDay || localDayKey(),
+    enabled,
+    restrictionDay: today,
     notificationsEnabled: s.notificationsEnabled !== false
   });
   const next = await state();
+  const initialDomain = enabled ? await activeSite({ ...next, restrictedDomains: domains }) : null;
+  await chrome.storage.local.set({ currentDomain: initialDomain, lastTickAt: Date.now() });
   await syncRules(next.restrictedDomains || [], next.phase);
   chrome.alarms.create(ALARM, { periodInMinutes: 0.5 });
 }
