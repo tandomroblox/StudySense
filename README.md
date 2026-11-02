@@ -64,7 +64,7 @@ The extension is manually installed as an unpacked Chromium extension; this is n
 - Usage history is stored in the browser profile and retained for up to 90 days. It is not uploaded to the StudySense website or D1.
 - Time is estimated from the active tab while the browser window is focused. Browser alarm throttling, sleep, crashes, and switching devices can make estimates imperfect.
 - This extension cannot monitor native desktop apps, other browsers, or a device when the extension is disabled or removed. It is a self-management aid, not tamper-proof parental-control software. Incognito monitoring is not enabled by default.
-- Host permissions are optional. Selecting all-site monitoring triggers a broad host-permission request; users should choose that mode only if they understand and agree to it.
+- The extension uses the browser's `tabs` permission to read the active tab's hostname. It does not need broad host access or per-site permission prompts for hostname-only reports. Blocking uses the `declarativeNetRequest` permission and only applies to the restricted-domain list.
 
 ## Development checks
 
@@ -100,7 +100,7 @@ npx wrangler d1 migrations apply studysense-db --remote
 
 Migration `0006_revision_library.sql` adds only tables and indexes for revision scheduling and the study library. It does not delete or rewrite existing study records. In the connected production D1 database for this deployment, the `user_profiles` table and the `0002`–`0006` migration records have been verified. For a different environment, inspect its current schema and migration history before applying pending migrations; do not blindly reapply production changes.
 
-This repository does not contain a configured Cloudflare deployment workflow with credentials. A passing GitHub check or a merged commit alone does **not** prove that a new Worker version or its static assets are live. Verify the Worker version, public HTTP response, sign-in, D1 operations, AI calls, and offline shell after a deployment.
+A GitHub Actions Cloudflare deployment workflow is configured, but it requires the `CLOUDFLARE_API_TOKEN` repository secret. A passing quality check or merged commit alone does **not** prove that a new Worker version or its static assets are live. Verify the deployed Worker version, public HTTP response, sign-in, D1 operations, AI calls, and offline shell after a deployment.
 
 ## Data and safety notes
 
