@@ -29,10 +29,27 @@ jobs:
           node --check public/syllabus.js
           node --check public/study-tools.js
           node --input-type=module --check < src/index.js
+      - name: Check deployment credential
+        id: cloudflare-token
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -n "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Deploy Worker and all static assets
+        if: steps.cloudflare-token.outputs.available == 'true'
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: "39e0203a2dd2c0bd4511bbc25ef01292"
           wranglerVersion: "4.156.1"
           command: deploy src/index.js --config wrangler.jsonc --keep-vars
+
+      - name: Explain skipped GitHub Actions deployment
+        if: steps.cloudflare-token.outputs.available != 'true'
+        run: echo "GitHub Actions deployment skipped because CLOUDFLARE_API_TOKEN is not configured. Confirm the separate Cloudflare deployment path is active before relying on this commit being live."
