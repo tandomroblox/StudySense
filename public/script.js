@@ -221,7 +221,7 @@ function showSignedOut(message = "") {
 }
 function showSignedIn(user) {
   if (isAuthPage) {
-    window.location.replace("/index.html");
+    window.location.replace("/dashboard.html");
     return;
   }
   authLoadingPanel.hidden = true;
