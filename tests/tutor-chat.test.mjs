@@ -33,6 +33,8 @@ test("The tutor API accepts bounded chat history and infers likely subject", () 
   assert.ok(worker.includes('messages[messages.length - 1]?.role !== "user"'));
   assert.ok(worker.includes("You are not limited to school subjects, a particular curriculum, grade, textbook, or study material."));
   assert.ok(worker.includes("Do not claim to have searched or read StudySense PDFs, files, or study materials unless their contents are actually provided in the conversation."));
+  assert.ok(worker.includes("the mass ratio is 2×1:16 = 1:8"));
+  assert.ok(worker.includes("temperature: 0.3"));
   assert.ok(worker.includes('if (url.pathname === "/api/tutor" && request.method === "POST")'));
 });
 
