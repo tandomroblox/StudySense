@@ -124,3 +124,12 @@ test("App navigation swaps routes without reloading the document", () => {
   assert.ok(!shellJs.includes('"/time-guard.html"'), "The Time Guard landing page should remain a normal page navigation");
   assert.ok(shellJs.includes('"/profile.html": "profile"'));
 });
+
+
+test("The auth-only brand row never appears in signed-in app routes", () => {
+  const css = read("public/style.css");
+  const shell = read("public/app-shell.html");
+  assert.match(css, /\.auth-page-brand\s*\{\s*display:\s*none\s*;?\s*\}/);
+  assert.match(css, /\.auth-page\s+\.auth-page-brand\s*\{[^}]*display:\s*flex/s);
+  assert.ok(shell.includes('class="auth-page-brand"'), "The shared auth brand row should remain available to the login route");
+});
