@@ -189,3 +189,31 @@ test("startup selects the focused active restricted site so the first interval i
   assert.equal(storageState.currentDomain, "youtube.com");
   focusedWindow = false;
 });
+
+
+test("active-tab time is added to daily site totals while the browser is focused", async () => {
+  const now = Date.now();
+  const today = api.localDayKey(now);
+  focusedWindow = true;
+  openTabs.length = 0;
+  openTabs.push({ id: 21, url: "https://www.youtube.com/watch?v=abc" });
+  storageState = {
+    restrictedDomains: ["youtube.com", "instagram.com"],
+    trackedDomains: ["youtube.com", "instagram.com"],
+    trackMode: "selected",
+    enabled: true,
+    phase: "ready",
+    usedSeconds: 0,
+    phaseEndsAt: 0,
+    restrictionDay: today,
+    lastTickAt: now - 30000,
+    currentDomain: "youtube.com",
+    usageByDay: {},
+    notificationsEnabled: false
+  };
+  await api.tick();
+  assert.equal(storageState.usedSeconds, 30);
+  assert.equal(storageState.usageByDay[today]["youtube.com"], 30);
+  assert.equal(storageState.currentDomain, "youtube.com");
+  focusedWindow = false;
+});
