@@ -29,7 +29,7 @@ const chrome = {
   declarativeNetRequest: { getDynamicRules: async () => [], updateDynamicRules: async rules => { ruleChanges.push(rules); } },
   notifications: { create: async () => "notification-id" }
 };
-const api = vm.runInNewContext(source + "\n;({ localDayKey, addUsageSegment, pruneHistory, matchesDomain, validDomainList, ALLOWANCE_SECONDS, MAX_HISTORY_DAYS, DEFAULT_RESTRICTED_DOMAINS, COOLDOWN_MS, initialize, tick })", {
+const api = vm.runInNewContext(source + "\n;({ localDayKey, addUsageSegment, pruneHistory, matchesDomain, validDomainList, ALLOWANCE_SECONDS, MAX_HISTORY_DAYS, DEFAULT_RESTRICTED_DOMAINS, COOLDOWN_MS, initialize, tick, resumeTracking })", {
   chrome, URL, Date, Math, Object, Array, String, RegExp, Error, Set, Number
 });
 
@@ -244,4 +244,28 @@ test("overlapping browser events cannot open duplicate cooldown popups", async (
   assert.equal(storageState.phase, "cooldown");
   assert.equal(popups.length, 1);
   focusedWindow = false;
+});
+
+
+test("resuming after an expired cooldown does not reapply blocking rules", async () => {
+  focusedWindow = false;
+  storageState = {
+    restrictedDomains: ["youtube.com"],
+    trackedDomains: ["youtube.com"],
+    trackMode: "selected",
+    enabled: false,
+    phase: "cooldown",
+    usedSeconds: 900,
+    phaseEndsAt: Date.now() - 1000,
+    restrictionDay: api.localDayKey(),
+    lastTickAt: Date.now() - 60000,
+    currentDomain: null,
+    usageByDay: {}
+  };
+  await api.resumeTracking();
+  assert.equal(storageState.enabled, true);
+  assert.equal(storageState.phase, "ready");
+  assert.equal(storageState.usedSeconds, 0);
+  assert.equal(storageState.phaseEndsAt, 0);
+  assert.equal(ruleChanges.at(-1).addRules.length, 0);
 });
