@@ -476,3 +476,20 @@ body:not(.is-signed-in) .topbar .site-nav,body:not(.is-signed-in) .topbar .accou
   .feature-card { border-radius: 16px; }
   .landing-cta h2 { font-size: 34px; letter-spacing: -1.2px; }
 }
+
+/* Login and registration are a standalone page, not part of the dashboard shell. */
+body.auth-page { display:block; min-height:100vh; }
+body.auth-page #appRoot { min-height:100vh; display:flex; flex-direction:column; }
+body.auth-page .pwa-install-banner { display:none !important; }
+body.auth-page .auth-page-brand { width:min(100% - 40px, 480px); margin:54px auto 18px; padding:0; }
+body.auth-page .container { width:min(100% - 40px, 480px); margin:0 auto; padding:0 0 56px; }
+body.auth-page #authPanel { display:block; width:100%; max-width:480px; margin:18px auto 0; padding:28px; }
+body.auth-page #authLoadingPanel, body.auth-page .topbar, body.auth-page .welcome, body.auth-page #appPanel { display:none !important; }
+body.auth-page #authPanel[hidden] { display:none !important; }
+body.auth-page #authPanel h2 { font-size:28px; letter-spacing:-.7px; }
+body.auth-page #authForm { display:grid; gap:2px; }
+body.auth-page #authSubmit { margin-top:18px; }
+@media(max-width:560px) {
+  body.auth-page .auth-page-brand { margin-top:34px; }
+  body.auth-page #authPanel { padding:22px; }
+}

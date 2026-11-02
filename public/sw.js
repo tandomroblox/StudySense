@@ -1,4 +1,4 @@
-const CACHE_NAME = "studysense-shell-v9";
+const CACHE_NAME = "studysense-auth-layout-v7";
 const APP_SHELL = [
   "/", "/index.html", "/dashboard.html", "/login.html", "/planner.html", "/exams.html", "/syllabus.html",
   "/learn.html", "/library.html", "/profile.html", "/time-guard.html", "/time-guard.css",
