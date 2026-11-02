@@ -13,7 +13,9 @@ const html = read("public/app-shell.html");
 
 test("The login route loads a dedicated auth module, not the dashboard bundle", () => {
   assert.match(shell, /if \(isAuthRoute\)[\s\S]*?loadScript\("\/auth\.js"\)/);
-  const authBranch = shell.slice(shell.indexOf("if (isAuthRoute)"), shell.indexOf("} catch (error)", shell.indexOf("if (isAuthRoute)")));
+  const authStart = shell.indexOf("if (isAuthRoute)");
+  const authEnd = shell.indexOf("} else {", authStart);
+  const authBranch = shell.slice(authStart, authEnd);
   assert.doesNotMatch(authBranch, /loadScript\("\/script\.js"\)/);
   assert.match(auth, /authForm\.addEventListener\("submit"/);
 });
