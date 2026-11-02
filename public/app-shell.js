@@ -40,8 +40,10 @@
   const isStandaloneApp = () =>
     window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
 
+  const isAuthRoute = window.location.pathname === "/login.html";
+
   function mountInstallBanner() {
-    if (!root || isStandaloneApp() || installBannerDismissed || root.querySelector("#pwaInstallBanner")) return;
+    if (isAuthRoute || !root || isStandaloneApp() || installBannerDismissed || root.querySelector("#pwaInstallBanner")) return;
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     if (!deferredInstallPrompt && !isMobile) return;
 
