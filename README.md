@@ -28,6 +28,12 @@ The routes use `app-shell.html` and `app-shell.js` to mount one shared set of pa
 
 Generated AI practice is original practice material, not a claim of official NCERT/CBSE questions. When textbook-specific accuracy matters, add the relevant lesson excerpt and verify generated material against the prescribed book and teacher's syllabus.
 
+## Windows desktop app
+
+The Windows desktop wrapper is in `desktop/`. It opens the live StudySense workspace in its own window and provides integrated tabs for Overview, Planner, Exams, Syllabus, Learn, Library, and Time Guard. The app uses a persistent session partition and the StudySense logo as its Windows installer and shortcut icon.
+
+A Windows x64 installer is built by the `StudySense Windows desktop build` GitHub Actions workflow and uploaded as the `StudySense-Windows-Installer` workflow artifact. The wrapper requires an internet connection for the live workspace. It does not yet monitor arbitrary native Windows applications; Time Guard's browser extension remains separate.
+
 ## Android install (PWA)
 
 StudySense is installable on Android as a Progressive Web App (PWA), so you can use the same website, account, and backend without setting up Android Studio or maintaining a second native codebase. The app manifest includes standalone display metadata and shortcuts to Planner and Learn; the service worker caches the public app shell for offline navigation. API calls and private account data are intentionally never cached.
