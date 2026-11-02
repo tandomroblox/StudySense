@@ -13,11 +13,12 @@ const createdWindows = [];
 const openTabs = [];
 const redirectedTabs = [];
 const ruleChanges = [];
+let focusedWindow = false;
 const chrome = {
   runtime: { onInstalled: event, onStartup: event, onMessage: event, sendMessage: async () => ({}), getURL: path => "chrome-extension://studysense/" + path },
   alarms: { onAlarm: event, create() {} },
   tabs: { onActivated: event, onUpdated: event, query: async () => openTabs, update: async (id, properties) => { redirectedTabs.push({ id, ...properties }); return { id, ...properties }; } },
-  windows: { onFocusChanged: event, WINDOW_ID_NONE: -1, getLastFocused: async () => ({ focused: false }), create: async options => { createdWindows.push(options); return { id: 99 }; } },
+  windows: { onFocusChanged: event, WINDOW_ID_NONE: -1, getLastFocused: async () => ({ focused: focusedWindow, id: 1 }), create: async options => { createdWindows.push(options); return { id: 99 }; } },
   storage: { local: {
     get: async keys => {
       if (Array.isArray(keys)) return Object.fromEntries(keys.filter(key => Object.hasOwn(storageState, key)).map(key => [key, storageState[key]]));
@@ -123,4 +124,68 @@ test("hostnames can be monitored and blocked without optional per-site host gran
   assert.ok(fs.existsSync(path.join(root, "browser-extension/break.html")));
   assert.ok(fs.existsSync(path.join(root, "browser-extension/break.css")));
   assert.ok(fs.existsSync(path.join(root, "browser-extension/break.js")));
+});
+
+
+test("startup resumes an unexpired cooldown but clears an expired cooldown allowance", async () => {
+  focusedWindow = false;
+  storageState = {
+    restrictedDomains: ["youtube.com"],
+    trackedDomains: ["youtube.com"],
+    trackMode: "selected",
+    enabled: true,
+    phase: "cooldown",
+    usedSeconds: 900,
+    phaseEndsAt: Date.now() - 1000,
+    restrictionDay: api.localDayKey(),
+    lastTickAt: Date.now() - 60000,
+    currentDomain: "youtube.com",
+    usageByDay: {}
+  };
+  await api.initialize();
+  assert.equal(storageState.phase, "ready");
+  assert.equal(storageState.usedSeconds, 0);
+  assert.equal(storageState.phaseEndsAt, 0);
+  assert.equal(storageState.currentDomain, null);
+});
+
+test("startup preserves an active cooldown and its end time", async () => {
+  focusedWindow = false;
+  const end = Date.now() + 10 * 60 * 1000;
+  storageState = {
+    restrictedDomains: ["youtube.com"],
+    trackedDomains: ["youtube.com"],
+    trackMode: "selected",
+    enabled: true,
+    phase: "cooldown",
+    usedSeconds: 900,
+    phaseEndsAt: end,
+    restrictionDay: api.localDayKey(),
+    usageByDay: {}
+  };
+  await api.initialize();
+  assert.equal(storageState.phase, "cooldown");
+  assert.equal(storageState.usedSeconds, 900);
+  assert.equal(storageState.phaseEndsAt, end);
+  assert.ok(ruleChanges.at(-1).addRules?.some(rule => rule.condition.urlFilter.includes("youtube.com")));
+});
+
+test("startup selects the focused active restricted site so the first interval is counted", async () => {
+  focusedWindow = true;
+  openTabs.length = 0;
+  openTabs.push({ id: 12, url: "https://www.youtube.com/watch?v=abc" });
+  storageState = {
+    restrictedDomains: ["youtube.com"],
+    trackedDomains: ["youtube.com"],
+    trackMode: "selected",
+    enabled: true,
+    phase: "ready",
+    usedSeconds: 0,
+    phaseEndsAt: 0,
+    restrictionDay: api.localDayKey(),
+    usageByDay: {}
+  };
+  await api.initialize();
+  assert.equal(storageState.currentDomain, "youtube.com");
+  focusedWindow = false;
 });
