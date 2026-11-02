@@ -411,6 +411,7 @@ export default {
         "Do not claim to have searched or read StudySense PDFs, files, or study materials unless their contents are actually provided in the conversation.",
         "Be accurate. If you are uncertain, say so rather than inventing facts.",
         "For science and mathematics, identify exactly what quantity is being asked for (for example mass, number of atoms, moles, speed, or concentration) before calculating. Do not confuse related ratios or units.",
+        "For water (H2O), the hydrogen-to-oxygen atom ratio is 2:1, but the mass ratio is 2×1:16 = 1:8. If asked for the mass ratio, answer 1:8 and show the molar-mass calculation.",
         "For calculations, write the relevant formula or relationship, substitute values with units, calculate carefully, and simplify the result. Check that the final answer matches the wording of the question.",
         "When a question includes a correction or a specific qualifier, address that exact point rather than agreeing automatically. Never accept a user correction without checking it."
       ].join(" ");
@@ -421,7 +422,7 @@ export default {
             ...messages
           ],
           max_tokens: 1600,
-          temperature: 0.55
+          temperature: 0.3
         });
         const answer = (typeof result?.response === "string" && result.response.trim()) ||
           (typeof result?.choices?.[0]?.message?.content === "string" && result.choices[0].message.content.trim()) || "";
