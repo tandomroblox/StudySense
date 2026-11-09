@@ -518,6 +518,22 @@ function renderTutorMarkdown(target, markdown) {
   flushParagraph();flushList();
   if(codeLines){const pre=document.createElement("pre"),code=document.createElement("code");code.textContent=codeLines.join("\n");pre.append(code);target.append(pre);}
 }
+function appendTutorMessage(role, content, pending=false) {
+  const article=document.createElement("article");
+  article.className="tutor-message "+role+(pending?" is-pending":"");
+  const speaker=document.createElement("span");
+  speaker.className="tutor-speaker";
+  speaker.textContent=role==="user"?"You":"StudySense";
+  const body=document.createElement("div");
+  body.className="tutor-content";
+  if(pending) body.textContent=content;
+  else if(role==="assistant") renderTutorMarkdown(body,content);
+  else body.textContent=content;
+  article.append(speaker,body);
+  tutorTranscript.append(article);
+  tutorTranscript.scrollTop=tutorTranscript.scrollHeight;
+  return {article,paragraph:body};
+}
 function resizeTutorInput() {
   tutorInput.style.height="auto";
   tutorInput.style.height=Math.min(tutorInput.scrollHeight,150)+"px";
