@@ -21,7 +21,7 @@
     "/syllabus.html": "syllabus",
     "/learn.html": "learn",
     "/library.html": "library",
-    "/profile.html": "profile",\n    "/time-guard.html": "time-guard"
+    "/profile.html": "profile"
   };
 
   function loadScript(src) {
