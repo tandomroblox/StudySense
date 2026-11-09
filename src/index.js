@@ -111,7 +111,9 @@ function redirectWithGoogleStatus(request, status) {
   return Response.redirect(target.toString(), 303);
 }
 async function googleIdentityFromCode(code, request, env, nonce) {
-  const redirectUri = typeof env.GOOGLE_REDIRECT_URI === "string" && env.GOOGLE_REDIRECT_URI.trim()\n    ? env.GOOGLE_REDIRECT_URI.trim()\n    : new URL("/api/auth/google/callback", request.url).toString();
+  const redirectUri = typeof env.GOOGLE_REDIRECT_URI === "string" && env.GOOGLE_REDIRECT_URI.trim()
+    ? env.GOOGLE_REDIRECT_URI.trim()
+    : new URL("/api/auth/google/callback", request.url).toString();
   const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "content-type": "application/x-www-form-urlencoded" },
@@ -199,7 +201,9 @@ export default {
       const googleUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
       googleUrl.search = new URLSearchParams({
         client_id: env.GOOGLE_CLIENT_ID,
-        redirect_uri: typeof env.GOOGLE_REDIRECT_URI === "string" && env.GOOGLE_REDIRECT_URI.trim()\n          ? env.GOOGLE_REDIRECT_URI.trim()\n          : new URL("/api/auth/google/callback", request.url).toString(),
+        redirect_uri: typeof env.GOOGLE_REDIRECT_URI === "string" && env.GOOGLE_REDIRECT_URI.trim()
+          ? env.GOOGLE_REDIRECT_URI.trim()
+          : new URL("/api/auth/google/callback", request.url).toString(),
         response_type: "code",
         scope: "openid email profile",
         state,
