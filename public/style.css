@@ -496,3 +496,22 @@ body.auth-page #authSubmit { margin-top:18px; }
 
 /* The auth-only brand row is hidden everywhere except the standalone login route. */
 .auth-page-brand { display: none; }
+
+
+/* Render tutor replies as readable, safe Markdown blocks. */
+.tutor-content { line-height:1.65; overflow-wrap:anywhere; }
+.tutor-content > :first-child { margin-top:0; }
+.tutor-content > :last-child { margin-bottom:0; }
+.tutor-content p { margin:0 0 10px; white-space:normal; line-height:1.65; }
+.tutor-content h1,.tutor-content h2,.tutor-content h3 { margin:14px 0 7px; line-height:1.3; color:#f1f4ff; }
+.tutor-content h1 { font-size:1.2rem; }
+.tutor-content h2 { font-size:1.1rem; }
+.tutor-content h3 { font-size:1rem; }
+.tutor-content ul,.tutor-content ol { margin:5px 0 12px; padding-left:24px; }
+.tutor-content li { margin:4px 0; padding-left:2px; line-height:1.6; }
+.tutor-content strong { color:#fff; font-weight:750; }
+.tutor-content code { padding:2px 5px; border-radius:5px; background:#0b1222; color:#cbd5ff; font-size:.92em; }
+.tutor-content pre { overflow-x:auto; margin:9px 0 12px; padding:12px; border-radius:9px; background:#0b1222; white-space:pre; }
+.tutor-content pre code { padding:0; background:transparent; }
+.tutor-content a { color:#aebaff; text-decoration:underline; }
+.tutor-content hr { border:0; border-top:1px solid #ffffff20; margin:12px 0; }
