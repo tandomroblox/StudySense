@@ -10,7 +10,8 @@
     syllabus: { eyebrow: "CURRICULUM & PROGRESS", title: "Track every chapter.", description: "Use the textbook catalogue, import chapters, and mark your progress as you go." },
     learn: { eyebrow: "ACTIVE RECALL", title: "Learn it. Test it. Retain it.", description: "Practice questions, flashcards, spaced revision, and an AI tutor in one workspace." },
     library: { eyebrow: "YOUR PERSONAL KNOWLEDGE BASE", title: "Keep useful things close.", description: "Save the notes, formulas, definitions, and doubts you will want to revisit." },
-    profile: { eyebrow: "YOUR ACCOUNT", title: "Profile & preferences.", description: "Set your class and daily study goal once; StudySense uses them to tailor your workspace." }
+    profile: { eyebrow: "YOUR ACCOUNT", title: "Profile & preferences.", description: "Set your class and daily study goal once; StudySense uses them to tailor your workspace." },
+    "time-guard": { eyebrow: "FOCUSED SCREEN TIME", title: "Time Guard.", description: "Review your screen-time allowance and browser monitoring tools." }
   };
   const routeByPath = {
     "/": "dashboard",
@@ -20,7 +21,7 @@
     "/syllabus.html": "syllabus",
     "/learn.html": "learn",
     "/library.html": "library",
-    "/profile.html": "profile"
+    "/profile.html": "profile",\n    "/time-guard.html": "time-guard"
   };
 
   function loadScript(src) {
@@ -126,6 +127,20 @@
       link.classList.toggle("active", active);
       if (active) link.setAttribute("aria-current", "page");
       else link.removeAttribute("aria-current");
+    });
+    const pageSections = {
+      dashboard: ["dashboardStats", "examStudyPlanSection", "screenTimeSection"],
+      planner: ["plannerSection", "focusTimerSection"],
+      exams: ["examCenterSection", "examStudyPlanSection"],
+      syllabus: ["syllabusTrackerSection", "curriculumLibrarySection"],
+      learn: ["tutorSection", "flashcardsSection", "practiceLogSection"],
+      library: ["librarySection"],
+      profile: ["profileSection"],
+      "time-guard": []
+    };
+    const visible = new Set(pageSections[currentPage] || pageSections.dashboard);
+    document.querySelectorAll("#appPanel > section").forEach(section => {
+      section.hidden = !visible.has(section.id);
     });
     closeAccountMenu();
   }
