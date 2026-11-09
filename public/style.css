@@ -515,3 +515,34 @@ body.auth-page #authSubmit { margin-top:18px; }
 .tutor-content pre code { padding:0; background:transparent; }
 .tutor-content a { color:#aebaff; text-decoration:underline; }
 .tutor-content hr { border:0; border-top:1px solid #ffffff20; margin:12px 0; }
+
+
+/* Keep the workspace tabs visible and usable on narrow screens. */
+@media (max-width: 1100px) {
+  .topbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 12px 16px;
+  }
+  .topbar .brand { flex: 0 0 auto; }
+  .topbar .site-nav {
+    order: 3;
+    flex: 1 0 100%;
+    justify-content: flex-start;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 2px 0 5px;
+    scrollbar-width: thin;
+    -webkit-overflow-scrolling: touch;
+  }
+  .topbar .site-nav a { flex: 0 0 auto; }
+  .topbar .account-menu { margin-left: auto; }
+  .topbar > .status { margin-left: auto; }
+}
+@media (max-width: 560px) {
+  .topbar { padding: 10px 12px; }
+  .topbar .brand { font-size: 19px; }
+  .topbar .site-nav a { padding: 9px 10px; font-size: 12px; }
+  .topbar > .status { display: none; }
+}
