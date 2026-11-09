@@ -468,18 +468,55 @@ const profileForm=document.querySelector("#profileForm"),profileName=document.qu
 const tutorForm=document.querySelector("#tutorForm"),tutorInput=document.querySelector("#tutorInput"),tutorSubmit=document.querySelector("#tutorSubmit"),tutorMessage=document.querySelector("#tutorMessage"),tutorTranscript=document.querySelector("#tutorTranscript"),tutorGradeLabel=document.querySelector("#tutorGradeLabel"),tutorVoiceInput=document.querySelector("#tutorVoiceInput"),tutorSpeak=document.querySelector("#tutorSpeak");
 let tutorSending=false;
 let tutorConversation=[];
-function appendTutorMessage(role, content, pending=false) {
-  const article=document.createElement("article");
-  article.className="tutor-message "+role+(pending?" is-pending":"");
-  const speaker=document.createElement("span");
-  speaker.className="tutor-speaker";
-  speaker.textContent=role==="user"?"You":"StudySense";
-  const paragraph=document.createElement("p");
-  paragraph.textContent=content;
-  article.append(speaker,paragraph);
-  tutorTranscript.append(article);
-  tutorTranscript.scrollTop=tutorTranscript.scrollHeight;
-  return {article,paragraph};
+function appendTutorInline(parent, text) {
+  const pattern=/\*\*([^*]+)\*\*|\*([^*]+)\*|\x60([^\x60]+)\x60|\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g;
+  let cursor=0, match;
+  while((match=pattern.exec(text))) {
+    if(match.index>cursor) parent.append(document.createTextNode(text.slice(cursor,match.index)));
+    let node;
+    if(match[1]!==undefined){node=document.createElement("strong");node.textContent=match[1];}
+    else if(match[2]!==undefined){node=document.createElement("em");node.textContent=match[2];}
+    else if(match[3]!==undefined){node=document.createElement("code");node.textContent=match[3];}
+    else {node=document.createElement("a");node.textContent=match[4];node.href=match[5];node.target="_blank";node.rel="noopener noreferrer";}
+    parent.append(node);cursor=pattern.lastIndex;
+  }
+  if(cursor<text.length) parent.append(document.createTextNode(text.slice(cursor)));
+}
+function renderTutorMarkdown(target, markdown) {
+  target.replaceChildren();
+  const lines=String(markdown||"").replace(/\r\n?/g,"\n").split("\n");
+  let paragraph=[],list=null,codeLines=null;
+  const flushParagraph=()=>{
+    if(!paragraph.length)return;
+    const p=document.createElement("p");
+    appendTutorInline(p,paragraph.join(" "));
+    target.append(p);paragraph=[];
+  };
+  const flushList=()=>{if(list){target.append(list);list=null;}};
+  for(const line of lines){
+    if(line.trim().startsWith("```")){
+      flushParagraph();flushList();
+      if(codeLines){const pre=document.createElement("pre"),code=document.createElement("code");code.textContent=codeLines.join("\n");pre.append(code);target.append(pre);codeLines=null;}
+      else codeLines=[];
+      continue;
+    }
+    if(codeLines){codeLines.push(line);continue;}
+    const trimmed=line.trim();
+    if(!trimmed){flushParagraph();flushList();continue;}
+    const heading=trimmed.match(/^(#{1,3})\s+(.+)$/);
+    if(heading){flushParagraph();flushList();const h=document.createElement("h"+heading[1].length);appendTutorInline(h,heading[2]);target.append(h);continue;}
+    const item=trimmed.match(/^([-*+]\s+|\d+[.)]\s+)(.+)$/);
+    if(item){
+      flushParagraph();
+      const ordered=/^\d/.test(item[1]);
+      if(!list||list.tagName!==(ordered?"OL":"UL")){flushList();list=document.createElement(ordered?"ol":"ul");}
+      const li=document.createElement("li");appendTutorInline(li,item[2]);list.append(li);continue;
+    }
+    if(/^[-*_]{3,}$/.test(trimmed)){flushParagraph();flushList();target.append(document.createElement("hr"));continue;}
+    flushList();paragraph.push(trimmed);
+  }
+  flushParagraph();flushList();
+  if(codeLines){const pre=document.createElement("pre"),code=document.createElement("code");code.textContent=codeLines.join("\n");pre.append(code);target.append(pre);}
 }
 function resizeTutorInput() {
   tutorInput.style.height="auto";
@@ -518,7 +555,7 @@ async function sendTutorMessage(event) {
   try {
     const response=await api("/api/tutor",{method:"POST",body:JSON.stringify({grade:Number(profileGrade.value)||9,messages:outgoing})});
     const answer=typeof response.answer==="string"&&response.answer.trim()?response.answer.trim():"I couldn't produce a reply. Please try again.";
-    pending.paragraph.textContent=answer;
+    renderTutorMarkdown(pending.paragraph,answer);
     pending.article.classList.remove("is-pending");
     tutorConversation=[...outgoing,{role:"assistant",content:answer}].slice(-14);
   } catch(error) {
