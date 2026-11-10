@@ -347,7 +347,14 @@ export default {
         const record = await env.DB.prepare("DELETE FROM desktop_login_codes WHERE code_hash = ? AND expires_at > datetime('now') RETURNING user_id, email").bind(codeHash).first();
         if (!record) return json({ error: "This desktop login code has expired or was already used. Start Google sign-in again." }, 401);
         const token = await makeSession({ id: record.user_id, email: record.email }, env.SESSION_SECRET);
-        return json({ token, user: { id: record.user_id, email: record.email }, expires_in: SESSION_SECONDS });
+        // Set the session cookie from the Worker response so the embedded browser
+        // receives a genuine host-only __Host- cookie. Never pass this token to
+        // the desktop process for manual cookie construction.
+        return json(
+          { user: { id: record.user_id, email: record.email }, expires_in: SESSION_SECONDS },
+          200,
+          { "set-cookie": sessionCookie(token) }
+        );
       } catch (error) {
         console.error("Desktop login exchange failed", error);
         return json({ error: "Desktop sign-in could not be completed. Please try again." }, 500);
