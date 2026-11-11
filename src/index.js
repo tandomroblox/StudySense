@@ -469,7 +469,7 @@ export default {
         if (!validExamSubjects.includes(subject)) return json({ error: "Choose a valid exam subject." }, 400);
         if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(Date.parse(date + "T00:00:00Z"))) return json({ error: "Choose a valid exam date." }, 400);
         const id = crypto.randomUUID();
-        try { await env.DB.prepare("undefined").bind(id,session.sub,name,subject,date).run(); return json({ exam: { id,name,subject,exam_date:date } },201); }
+        try { await env.DB.prepare("INSERT INTO exams(id,user_id,name,subject,exam_date) VALUES(?,?,?,?,?)").bind(id,session.sub,name,subject,date).run(); return json({ exam: { id,name,subject,exam_date:date } },201); }
         catch { return json({ error: "Could not save exam. Check the database migration." },500); }
       }
       const em = url.pathname.match(/^\/api\/exams\/([0-9a-f-]{36})$/i);
