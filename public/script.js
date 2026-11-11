@@ -404,20 +404,29 @@ form.addEventListener("submit", async event => {
 });
 
 
-const examForm=document.querySelector("#examForm"), examName=document.querySelector("#examName"), examDate=document.querySelector("#examDate"), examList=document.querySelector("#examList"), examMessage=document.querySelector("#examMessage");
-const chapterForm=document.querySelector("#chapterForm"), chapterExam=document.querySelector("#chapterExam"), chapterSubject=document.querySelector("#chapterSubject"), chapterName=document.querySelector("#chapterName"), chapterList=document.querySelector("#chapterList"), chapterMessage=document.querySelector("#chapterMessage"), studyPlan=document.querySelector("#studyPlan");
-const syllabusClass=document.querySelector("#syllabusClass"), syllabusSubject=document.querySelector("#syllabusSubject"), syllabusBookNote=document.querySelector("#syllabusBookNote"), importSyllabusButton=document.querySelector("#importSyllabusButton"), syllabusImportMessage=document.querySelector("#syllabusImportMessage");
+const examForm=document.querySelector("#examForm"), examName=document.querySelector("#examName"), customExamName=document.querySelector("#customExamName"), examDate=document.querySelector("#examDate"), examList=document.querySelector("#examList"), examMessage=document.querySelector("#examMessage");
+const chapterForm=document.querySelector("#chapterForm"), chapterExam=document.querySelector("#chapterExam"), chapterName=document.querySelector("#chapterName"), chapterList=document.querySelector("#chapterList"), chapterMessage=document.querySelector("#chapterMessage"), studyPlan=document.querySelector("#studyPlan");
+const syllabusClass=document.querySelector("#syllabusClass"), syllabusSubject=document.querySelector("#syllabusSubject"), chapterSubject=syllabusSubject, syllabusBookNote=document.querySelector("#syllabusBookNote"), importSyllabusButton=document.querySelector("#importSyllabusButton"), syllabusImportMessage=document.querySelector("#syllabusImportMessage");
 function renderSyllabusOptions(){
  const grade=syllabusClass.value, entries=window.STUDYSENSE_SYLLABUS?.[grade]||{};
+ const previous=syllabusSubject.value;
  syllabusSubject.replaceChildren();
  Object.keys(entries).forEach(subject=>syllabusSubject.append(new Option(subject,subject)));
+ if(entries[previous]) syllabusSubject.value=previous;
  renderSyllabusBookNote();
 }
 function renderSyllabusBookNote(){
  const entry=window.STUDYSENSE_SYLLABUS?.[syllabusClass.value]?.[syllabusSubject.value];
- if(!entry){syllabusBookNote.textContent="This subject's full chapter list has not been verified for this edition yet. No chapters will be guessed or imported.";importSyllabusButton.disabled=true;return}
- syllabusBookNote.textContent=entry.book+" · "+(entry.chapters.length?entry.chapters.length+" chapters available":"Chapter list pending verification — no chapters will be imported.")+(entry.sourceNote?"\n"+entry.sourceNote:"");
+ chapterName.replaceChildren();
+ chapterName.append(new Option(entry?.chapters?.length?"Choose a chapter":"No verified chapters available",""));
+ if(!entry){
+  syllabusBookNote.textContent="This subject's chapter list has not been verified for this edition. No chapters will be guessed or imported.";
+  importSyllabusButton.disabled=true;chapterName.disabled=true;return;
+ }
+ syllabusBookNote.textContent=entry.book+" · "+(entry.chapters.length?entry.chapters.length+" chapters available":"Chapter list pending verification — no chapters will be guessed.")+(entry.sourceNote?"\n"+entry.sourceNote:"");
+ entry.chapters.forEach(title=>chapterName.append(new Option(title,title)));
  importSyllabusButton.disabled=!entry.chapters.length;
+ chapterName.disabled=!entry.chapters.length;
 }
 syllabusClass.addEventListener("change",renderSyllabusOptions);
 syllabusSubject.addEventListener("change",renderSyllabusBookNote);
@@ -460,7 +469,8 @@ function renderExams(){
  studyPlan.append(makeNode("p","readiness-note","Readiness is an estimate based on chapter status, not a prediction of exam marks. Suggested chapters are ordered by upcoming exam date."));
 }
 async function loadExams(){const data=await api("/api/exams");exams=data.exams;chapters=data.chapters;renderExams();window.dispatchEvent(new Event("studysense:data-changed"))}
-examForm.addEventListener("submit",async ev=>{ev.preventDefault();const b=examForm.querySelector('button[type="submit"]');b.disabled=true;try{await api("/api/exams",{method:"POST",body:JSON.stringify({name:examName.value.trim(),exam_date:examDate.value})});examName.value="";await loadExams()}catch(e){examMessage.textContent=e.message}finally{b.disabled=false}});
+examName.addEventListener("change",()=>{const custom=examName.value==="__custom__";customExamName.hidden=!custom;customExamName.required=custom;if(!custom)customExamName.value=""});
+examForm.addEventListener("submit",async ev=>{ev.preventDefault();const b=examForm.querySelector('button[type="submit"]');const name=examName.value==="__custom__"?customExamName.value.trim():examName.value;if(!name){examMessage.textContent="Choose an exam type or enter a custom name.";return}b.disabled=true;examMessage.textContent="";try{await api("/api/exams",{method:"POST",body:JSON.stringify({name,exam_date:examDate.value})});examName.value="";customExamName.value="";customExamName.hidden=true;customExamName.required=false;await loadExams()}catch(e){examMessage.textContent=e.message}finally{b.disabled=false}});
 chapterForm.addEventListener("submit",async ev=>{ev.preventDefault();const b=chapterForm.querySelector('button[type="submit"]');b.disabled=true;try{await api("/api/chapters",{method:"POST",body:JSON.stringify({exam_id:chapterExam.value,subject:chapterSubject.value,title:chapterName.value.trim()})});chapterName.value="";await loadExams()}catch(e){chapterMessage.textContent=e.message}finally{b.disabled=false}});
 
 
