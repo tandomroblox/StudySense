@@ -54,21 +54,22 @@
     </section>
 
     <section id="appPanel" hidden>
-      <section id="examCenterSection" class="card exam-center"><div class="section-heading"><div><p class="eyebrow">PLAN AHEAD</p><h2>Exam command centre</h2></div><span id="examCount" class="pill">0 exams</span></div><section class="stats exam-stats"><article class="card"><p class="muted">Upcoming exams</p><h2 id="upcomingExams">0</h2></article><article class="card"><p class="muted">Syllabus mastered</p><h2 id="syllabusCoverage">0%</h2></article><article class="card"><p class="muted">Readiness score</p><h2 id="readinessScore">0%</h2></article></section><form id="examForm"><label for="examName">Exam name</label><input id="examName" required maxlength="100" placeholder="e.g. Science final"><label for="examDate">Exam date</label><input id="examDate" type="date" required><button type="submit">Add exam</button></form><p id="examMessage" class="message"></p><div id="examList"></div></section>
+      <section id="examCenterSection" class="card exam-center"><div class="section-heading"><div><p class="eyebrow">PLAN AHEAD</p><h2>Exam command centre</h2></div><span id="examCount" class="pill">0 exams</span></div><section class="stats exam-stats"><article class="card"><p class="muted">Upcoming exams</p><h2 id="upcomingExams">0</h2></article><article class="card"><p class="muted">Syllabus mastered</p><h2 id="syllabusCoverage">0%</h2></article><article class="card"><p class="muted">Readiness score</p><h2 id="readinessScore">0%</h2></article></section><form id="examForm"><label for="examName">Exam type</label><select id="examName" required><option value="">Choose an exam type</option><option>Periodic Test 1</option><option>Periodic Test 2</option><option>Periodic Test 3</option><option>Periodic Test 4</option><option>Half-Yearly Examination</option><option>Annual / Final Examination</option><option value="__custom__">Custom exam…</option></select><input id="customExamName" maxlength="100" placeholder="Enter custom exam name" aria-label="Custom exam name" hidden><label for="examDate">Exam date</label><input id="examDate" type="date" required><button type="submit">Add exam</button></form><p id="examMessage" class="message"></p><div id="examList"></div></section>
       <section id="syllabusTrackerSection" class="card syllabus-panel"><div class="section-heading"><div><p class="eyebrow">CURRICULUM PROGRESS</p><h2>Syllabus tracker</h2></div></div>
-        <div class="syllabus-import card">
-          <p class="eyebrow">OFFICIAL CHAPTER CATALOGUE</p>
-          <h3>Load chapters by class</h3>
-          <p class="muted">Choose the class and subject, then add the chapter list to an exam. Existing progress is kept; already-added chapters are skipped.</p>
+        <form id="chapterForm" class="syllabus-import card">
+          <p class="eyebrow">CHAPTER SELECTION</p>
+          <h3>Add chapters to an exam</h3>
+          <p class="muted">Choose the exam, class, and subject. The chapter menu will show titles from the selected class's available textbook catalogue.</p>
+          <label for="chapterExam">Exam</label><select id="chapterExam" required></select>
           <div class="form-row">
-            <div class="field"><label for="syllabusClass">Class</label><select id="syllabusClass"><option value="6">Class 6 · 2026–27</option><option value="7">Class 7 · 2026–27</option><option value="8">Class 8 · 2026–27</option><option value="9">Class 9 · 2026–27</option><option value="10">Class 10 · 2026–27</option></select></div>
+            <div class="field"><label for="syllabusClass">Class</label><select id="syllabusClass"><option value="6">Class 6 · 2026–27</option><option value="7">Class 7 · 2026–27</option><option value="8">Class 8 · 2026–27</option><option value="9" selected>Class 9 · 2026–27</option><option value="10">Class 10 · 2026–27</option></select></div>
             <div class="field"><label for="syllabusSubject">Subject</label><select id="syllabusSubject"></select></div>
           </div>
           <p id="syllabusBookNote" class="chapter-meta"></p>
-          <button id="importSyllabusButton" type="button">Add chapter list to selected exam</button>
+          <label for="chapterName">Chapter</label><select id="chapterName" required></select>
+          <div class="form-row"><button id="importSyllabusButton" type="button">Add all chapters for this subject</button><button type="submit">Add selected chapter</button></div>
           <p id="syllabusImportMessage" class="message" role="status" aria-live="polite"></p>
-        </div>
-        <form id="chapterForm"><label for="chapterExam">Exam</label><select id="chapterExam" required></select><label for="chapterSubject">Subject</label><select id="chapterSubject"><option>Mathematics</option><option>Mathematics — Part I</option><option>Mathematics — Part II</option><option>Science</option><option>Social Science</option><option>Social Science — Part I</option><option>Social Science — Part II</option><option>English</option><option>Hindi</option><option>Telugu</option><option>IT-402</option><option>Skill Education</option><option>Vocational Education</option></select><label for="chapterName">Chapter</label><input id="chapterName" required maxlength="150"><button type="submit">Add chapter</button></form><p id="chapterMessage" class="message"></p><div id="chapterList"></div></section>
+        </form><p id="chapterMessage" class="message"></p><div id="chapterList"></div></section>
       <section id="examStudyPlanSection" class="card study-plan-panel"><div class="section-heading"><div><p class="eyebrow">NEXT STEPS</p><h2>Suggested study plan</h2></div></div><div id="studyPlan"></div></section>
       <section id="curriculumLibrarySection" class="card curriculum-library">
         <div class="section-heading">
