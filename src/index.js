@@ -457,17 +457,19 @@ export default {
       if (!session) return json({ error: "Please sign in to manage exams and syllabus." }, 401);
       if (url.pathname === "/api/exams" && request.method === "GET") {
         try {
-          const e = await env.DB.prepare("SELECT id,name,exam_date FROM exams WHERE user_id=? ORDER BY exam_date").bind(session.sub).all();
+          const e = await env.DB.prepare("SELECT id,name,subject,exam_date FROM exams WHERE user_id=? ORDER BY exam_date").bind(session.sub).all();
           const c = await env.DB.prepare("SELECT id,exam_id,subject,title,status FROM chapters WHERE user_id=? ORDER BY created_at DESC").bind(session.sub).all();
           return json({ exams: e.results || [], chapters: c.results || [] });
         } catch { return json({ error: "Exam database migration is not applied yet." }, 503); }
       }
       if (url.pathname === "/api/exams" && request.method === "POST") {
-        const b = await bodyJson(request), name = typeof b?.name === "string" ? b.name.trim() : "", date = typeof b?.exam_date === "string" ? b.exam_date : "";
+        const b = await bodyJson(request), name = typeof b?.name === "string" ? b.name.trim() : "", subject = typeof b?.subject === "string" ? b.subject : "", date = typeof b?.exam_date === "string" ? b.exam_date : "";
         if (!name || name.length > 100) return json({ error: "Exam name must be 1–100 characters." }, 400);
+        const validExamSubjects = ["Mathematics","Mathematics — Part I","Mathematics — Part II","Science","Social Science","Social Science — Part I","Social Science — Part II","English","Hindi","Telugu","IT-402","Skill Education","Vocational Education"];
+        if (!validExamSubjects.includes(subject)) return json({ error: "Choose a valid exam subject." }, 400);
         if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(Date.parse(date + "T00:00:00Z"))) return json({ error: "Choose a valid exam date." }, 400);
         const id = crypto.randomUUID();
-        try { await env.DB.prepare("INSERT INTO exams(id,user_id,name,exam_date) VALUES(?,?,?,?)").bind(id,session.sub,name,date).run(); return json({ exam: { id,name,exam_date:date } },201); }
+        try { await env.DB.prepare("undefined").bind(id,session.sub,name,subject,date).run(); return json({ exam: { id,name,subject,exam_date:date } },201); }
         catch { return json({ error: "Could not save exam. Check the database migration." },500); }
       }
       const em = url.pathname.match(/^\/api\/exams\/([0-9a-f-]{36})$/i);
