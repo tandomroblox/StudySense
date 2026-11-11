@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "src/**"
+      - "migrations/**"
       - "public/**"
       - "wrangler.jsonc"
       - "package.json"
@@ -48,7 +49,7 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: "39e0203a2dd2c0bd4511bbc25ef01292"
           wranglerVersion: "4.156.1"
-          command: deploy src/index.js --config wrangler.jsonc --keep-vars
+          command: d1 migrations apply studysense-db --remote --config wrangler.jsonc && deploy src/index.js --config wrangler.jsonc --keep-vars
 
       - name: Explain skipped GitHub Actions deployment
         if: steps.cloudflare-token.outputs.available != 'true'
