@@ -49,9 +49,14 @@ test("The shared shell has unique IDs and all cross-page destinations exist", ()
     assert.ok(shell.includes('id="' + id + '"'), "Missing shared element " + id);
     
   }
-  for (const subject of ["Mathematics — Part I", "Mathematics — Part II", "Social Science — Part I", "Social Science — Part II"]) {
-    assert.ok(shell.includes("<option>" + subject + "</option>"), "Manual chapter entry must support " + subject);
+  assert.ok(shell.includes('id="examName"'), "Exam type selector must be present");
+  for (const type of ["Periodic Test 1", "Periodic Test 2", "Periodic Test 3", "Periodic Test 4", "Half-Yearly Examination", "Annual / Final Examination"]) {
+    assert.ok(shell.includes("<option>" + type + "</option>"), "Exam type selector must include " + type);
   }
+  assert.ok(shell.includes('id="customExamName"'), "Custom exam names must remain supported");
+  assert.ok(shell.includes('id="syllabusClass"') && shell.includes('id="syllabusSubject"') && shell.includes('id="chapterName"'), "Chapter selection must use class, subject, and chapter dropdowns");
+  assert.ok(!shell.includes('id="chapterSubject"'), "The duplicate subject dropdown must be removed");
+  assert.ok(shell.includes("Add all chapters for this subject"), "Bulk chapter import must remain available");
 });
 
 test("All class selectors use consistent 2026–27 labels", () => {
