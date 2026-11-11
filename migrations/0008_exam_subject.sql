@@ -1,0 +1,1 @@
+ALTER TABLE exams ADD COLUMN subject TEXT NOT NULL DEFAULT "Science";
