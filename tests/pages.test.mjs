@@ -50,6 +50,7 @@ test("The shared shell has unique IDs and all cross-page destinations exist", ()
     
   }
   assert.ok(shell.includes('id="examName"'), "Exam type selector must be present");
+  assert.ok(shell.includes('id="examSubject"'), "Exam subject selector must be present");
   for (const type of ["Periodic Test 1", "Periodic Test 2", "Periodic Test 3", "Periodic Test 4", "Half-Yearly Examination", "Annual / Final Examination"]) {
     assert.ok(shell.includes("<option>" + type + "</option>"), "Exam type selector must include " + type);
   }
@@ -57,6 +58,9 @@ test("The shared shell has unique IDs and all cross-page destinations exist", ()
   assert.ok(shell.includes('id="syllabusClass"') && shell.includes('id="syllabusSubject"') && shell.includes('id="chapterName"'), "Chapter selection must use class, subject, and chapter dropdowns");
   assert.ok(!shell.includes('id="chapterSubject"'), "The duplicate subject dropdown must be removed");
   assert.ok(shell.includes("Add all chapters for this subject"), "Bulk chapter import must remain available");
+  const api = read("src/index.js");
+  assert.ok(api.includes("subject:typeof b?.subject") || api.includes("subject = typeof b?.subject"), "Exam API must accept a subject");
+  assert.ok(api.includes("name,subject,exam_date"), "Exam API must return saved subjects");
 });
 
 test("All class selectors use consistent 2026–27 labels", () => {
