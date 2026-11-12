@@ -1,0 +1,24 @@
+name: Desktop Source Package
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'desktop/**'
+      - '.github/workflows/desktop-source-package.yml'
+jobs:
+  package:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Create source ZIP
+        shell: pwsh
+        run: |
+          Compress-Archive -Path desktop\* -DestinationPath StudySense-Desktop-6.5.5-Source.zip -Force
+      - name: Upload source ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: StudySense-Desktop-6.5.5-Source
+          path: StudySense-Desktop-6.5.5-Source.zip
+          if-no-files-found: error
+          retention-days: 30
