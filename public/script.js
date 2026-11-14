@@ -537,6 +537,58 @@ function appendTutorInline(parent, text) {
   }
   if(cursor<text.length) parent.append(document.createTextNode(text.slice(cursor)));
 }
+
+function renderTutorMarkdown(target, markdown) {
+  target.replaceChildren();
+  const lines = String(markdown || "").replace(/\r\n?/g, "\n").split("\n");
+  let paragraph = [], list = null, codeLines = null;
+  const flushParagraph = () => {
+    if (!paragraph.length) return;
+    const p = document.createElement("p");
+    appendTutorInline(p, paragraph.join(" "));
+    target.append(p); paragraph = [];
+  };
+  const flushList = () => { if (list) { target.append(list); list = null; } };
+  for (const line of lines) {
+    if (line.trim().startsWith(String.fromCharCode(96).repeat(3))) {
+      flushParagraph(); flushList();
+      if (codeLines) {
+        const pre = document.createElement("pre"), code = document.createElement("code");
+        code.textContent = codeLines.join("\n"); pre.append(code); target.append(pre); codeLines = null;
+      } else codeLines = [];
+      continue;
+    }
+    if (codeLines) { codeLines.push(line); continue; }
+    const trimmed = line.trim();
+    if (!trimmed) { flushParagraph(); flushList(); continue; }
+    const heading = trimmed.match(/^(#{1,3})\s+(.+)$/);
+    if (heading) {
+      flushParagraph(); flushList();
+      const h = document.createElement("h" + heading[1].length);
+      appendTutorInline(h, heading[2]); target.append(h); continue;
+    }
+    const item = trimmed.match(/^([-*+]\s+|\d+[.)]\s+)(.+)$/);
+    if (item) {
+      flushParagraph();
+      const ordered = /^\d/.test(item[1]);
+      if (!list || list.tagName !== (ordered ? "OL" : "UL")) {
+        flushList(); list = document.createElement(ordered ? "OL" : "UL");
+      }
+      const li = document.createElement("li");
+      appendTutorInline(li, item[2]); list.append(li); continue;
+    }
+    if (/^[-*_]{3,}$/.test(trimmed)) {
+      flushParagraph(); flushList(); target.append(document.createElement("hr")); continue;
+    }
+    flushList(); paragraph.push(trimmed);
+  }
+  flushParagraph(); flushList();
+  if (codeLines) {
+    const pre = document.createElement("pre"), code = document.createElement("code");
+    code.textContent = codeLines.join("\n"); pre.append(code); target.append(pre);
+  }
+}
+
 function appendTutorMessage(role, content, pending=false) {
   const article=document.createElement("article");
   article.className="tutor-message "+role+(pending?" is-pending":"");
