@@ -249,7 +249,7 @@ authForm.addEventListener("submit", async event => {
     });
     passwordInput.value = "";
     showSignedIn(user.user);
-    await Promise.all([loadTasks(), loadExams(), loadLearningTools(), loadProfile()]);
+    await Promise.all([loadTasks(), loadExams(), loadLearningTools(), loadProfile(), loadTutorChats()]);
   } catch (error) {
     authMessage.textContent = error.message;
   } finally {
@@ -478,6 +478,82 @@ const profileForm=document.querySelector("#profileForm"),profileName=document.qu
 const tutorForm=document.querySelector("#tutorForm"),tutorInput=document.querySelector("#tutorInput"),tutorSubmit=document.querySelector("#tutorSubmit"),tutorMessage=document.querySelector("#tutorMessage"),tutorTranscript=document.querySelector("#tutorTranscript"),tutorGradeLabel=document.querySelector("#tutorGradeLabel"),tutorVoiceInput=document.querySelector("#tutorVoiceInput"),tutorSpeak=document.querySelector("#tutorSpeak");
 let tutorSending=false;
 let tutorConversation=[];
+let tutorChatId=null;
+let tutorChats=[];
+const tutorHistoryList=document.querySelector("#tutorHistoryList");
+const tutorHistoryStatus=document.querySelector("#tutorHistoryStatus");
+const tutorNewChat=document.querySelector("#tutorNewChat");
+function makeTutorTitle(prompt){
+  const cleaned=String(prompt||"").replace(/\s+/g," ").replace(/^(please\s+)?(can you|could you|would you|explain|help me|tell me|what is|what are)\s+/i,"").trim();
+  const words=cleaned.split(" ").filter(Boolean);
+  let title=words.slice(0,7).join(" ");
+  if(title.length>48)title=title.slice(0,45).trimEnd()+"…";
+  return title||"New conversation";
+}
+function renderTutorHistory(){
+  if(!tutorHistoryList)return;
+  tutorHistoryList.replaceChildren();
+  if(!tutorChats.length){const empty=document.createElement("p");empty.className="empty";empty.textContent="Your conversations will appear here.";tutorHistoryList.append(empty);return;}
+  for(const chat of tutorChats){
+    const row=document.createElement("div");row.className="tutor-history-item"+(chat.id===tutorChatId?" active":"");
+    const open=document.createElement("button");open.type="button";open.className="tutor-history-open";open.textContent=chat.title;open.title=chat.title;open.addEventListener("click",()=>openTutorChat(chat.id));
+    const rename=document.createElement("button");rename.type="button";rename.className="tutor-history-action";rename.textContent="✎";rename.title="Rename chat";rename.setAttribute("aria-label","Rename "+chat.title);rename.addEventListener("click",()=>renameTutorChat(chat));
+    const remove=document.createElement("button");remove.type="button";remove.className="tutor-history-action";remove.textContent="×";remove.title="Delete chat";remove.setAttribute("aria-label","Delete "+chat.title);remove.addEventListener("click",()=>deleteTutorChat(chat));
+    row.append(open,rename,remove);tutorHistoryList.append(row);
+  }
+}
+async function loadTutorChats(){
+  if(!tutorHistoryList)return;
+  try{const data=await api("/api/chats");tutorChats=Array.isArray(data.chats)?data.chats:[];renderTutorHistory();}
+  catch(error){tutorHistoryStatus.textContent=error.message;}
+}
+function showTutorWelcome(){
+  tutorTranscript.replaceChildren();
+  const article=document.createElement("article");article.className="tutor-message assistant";
+  const speaker=document.createElement("span");speaker.className="tutor-speaker";speaker.textContent="StudySense";
+  const p=document.createElement("p");p.textContent="Hey! What are you studying today? Ask a doubt, paste a problem, or ask me to quiz you one question at a time.";
+  article.append(speaker,p);tutorTranscript.append(article);
+}
+function startTutorChat(){
+  tutorChatId=null;tutorConversation=[];showTutorWelcome();renderTutorHistory();tutorMessage.textContent="New chat";
+  tutorInput.value="";resizeTutorInput();tutorInput.focus();
+}
+async function openTutorChat(id){
+  if(tutorSending)return;
+  tutorHistoryStatus.textContent="Loading…";
+  try{
+    const data=await api("/api/chats/"+encodeURIComponent(id));
+    const chat=data.chat;if(!chat)throw new Error("Chat not found.");
+    tutorChatId=chat.id;tutorConversation=Array.isArray(chat.messages)?chat.messages:[];
+    tutorTranscript.replaceChildren();
+    for(const message of tutorConversation)appendTutorMessage(message.role,message.content);
+    renderTutorHistory();tutorHistoryStatus.textContent="";
+    tutorMessage.textContent="Conversation restored.";
+  }catch(error){tutorHistoryStatus.textContent=error.message;}
+}
+async function persistTutorChat(firstPrompt){
+  if(tutorConversation.length<2)return;
+  const title=tutorChatId?(tutorChats.find(c=>c.id===tutorChatId)?.title||makeTutorTitle(firstPrompt)):makeTutorTitle(firstPrompt);
+  const data=await api("/api/chats",{method:"POST",body:JSON.stringify({id:tutorChatId||undefined,title,messages:tutorConversation})});
+  tutorChatId=data.id;
+  const existing=tutorChats.find(c=>c.id===data.id);
+  const item={id:data.id,title:data.title,updated_at:new Date().toISOString()};
+  tutorChats=[item,...tutorChats.filter(c=>c.id!==data.id)];
+  renderTutorHistory();
+}
+async function renameTutorChat(chat){
+  const title=window.prompt("Rename this conversation:",chat.title);
+  if(title===null||!title.trim())return;
+  try{await api("/api/chats/"+encodeURIComponent(chat.id),{method:"PATCH",body:JSON.stringify({title:title.trim()})});chat.title=title.trim();renderTutorHistory();}
+  catch(error){tutorHistoryStatus.textContent=error.message;}
+}
+async function deleteTutorChat(chat){
+  if(!window.confirm("Delete '"+chat.title+"'? This cannot be undone."))return;
+  try{await api("/api/chats/"+encodeURIComponent(chat.id),{method:"DELETE"});tutorChats=tutorChats.filter(c=>c.id!==chat.id);if(tutorChatId===chat.id)startTutorChat();else renderTutorHistory();}
+  catch(error){tutorHistoryStatus.textContent=error.message;}
+}
+if(tutorNewChat)tutorNewChat.addEventListener("click",startTutorChat);
+
 function appendTutorMath(parent, expression, display = false) {
   const wrapper = document.createElement(display ? "div" : "span");
   wrapper.className = display ? "tutor-math tutor-math-display" : "tutor-math tutor-math-inline";
@@ -645,6 +721,8 @@ async function sendTutorMessage(event) {
     renderTutorMarkdown(pending.paragraph,answer);
     pending.article.classList.remove("is-pending");
     tutorConversation=[...outgoing,{role:"assistant",content:answer}].slice(-14);
+    try{await persistTutorChat(question);tutorMessage.textContent="Saved to chat history.";}
+    catch(saveError){tutorMessage.textContent="Reply received, but chat couldn't be saved: "+saveError.message;}
   } catch(error) {
     pending.paragraph.textContent="I couldn't send that just now. "+(error.message||"Please try again.");
     pending.article.classList.remove("is-pending");
