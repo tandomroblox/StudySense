@@ -96,6 +96,11 @@
       <section id="tutorSection" class="card tutor-card">
         <div class="section-heading"><div><p class="eyebrow">YOUR STUDY COMPANION</p><h2>Chat with StudySense</h2></div><span class="pill">AI tutor</span></div>
         <p class="muted tutor-intro">Ask naturally. StudySense infers the likely subject from your question and remembers recent messages in this conversation.</p>
+        <div class="tutor-history">
+          <button id="tutorNewChat" type="button" class="secondary-button">＋ New chat</button>
+          <div class="tutor-history-heading"><span>Recent chats</span><span id="tutorHistoryStatus" aria-live="polite"></span></div>
+          <div id="tutorHistoryList" class="tutor-history-list"><p class="empty">Your conversations will appear here.</p></div>
+        </div>
         <div id="tutorTranscript" class="tutor-transcript" role="log" aria-live="polite" aria-relevant="additions text">
           <article class="tutor-message assistant"><span class="tutor-speaker">StudySense</span><p>Hey! What are you studying today? Ask a doubt, paste a problem, or ask me to quiz you one question at a time.</p></article>
         </div>
