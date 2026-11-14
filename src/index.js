@@ -379,6 +379,59 @@ export default {
       if(name.length>60||school.length>120||!Number.isInteger(grade)||grade<6||grade>10||!Number.isInteger(goal)||goal<15||goal>600)return json({error:"Check your name, school, class (6–10), and study goal (15–600 minutes)."},400);
       try{await env.DB.prepare("INSERT INTO user_profiles(user_id,display_name,grade,school,daily_goal_minutes,updated_at) VALUES(?,?,?,?,?,datetime('now')) ON CONFLICT(user_id) DO UPDATE SET display_name=excluded.display_name,grade=excluded.grade,school=excluded.school,daily_goal_minutes=excluded.daily_goal_minutes,updated_at=datetime('now')").bind(session.sub,name,grade,school,goal).run();return json({profile:{display_name:name,grade,school,daily_goal_minutes:goal}});}catch{return json({error:"Could not save profile. Check that migration 0005 has been applied."},500);}
     }
+    if (url.pathname === "/api/chats" || url.pathname.startsWith("/api/chats/")) {
+      const session = await readSession(request, env.SESSION_SECRET);
+      if (!session) return json({ error: "Please sign in to access your saved chats." }, 401);
+      const chatId = url.pathname.startsWith("/api/chats/") ? decodeURIComponent(url.pathname.slice("/api/chats/".length)) : "";
+      if (url.pathname === "/api/chats" && request.method === "GET") {
+        try {
+          const result = await env.DB.prepare("SELECT id,title,created_at,updated_at FROM tutor_chats WHERE user_id=? ORDER BY updated_at DESC LIMIT 100").bind(session.sub).all();
+          return json({ chats: result.results || [] });
+        } catch { return json({ error: "Chat history database migration is not applied yet." }, 503); }
+      }
+      if (url.pathname === "/api/chats" && request.method === "POST") {
+        const body = await bodyJson(request);
+        const id = typeof body?.id === "string" && /^[a-f0-9-]{20,40}$/i.test(body.id) ? body.id : crypto.randomUUID();
+        const title = typeof body?.title === "string" ? body.title.trim().slice(0,80) : "";
+        const messages = body?.messages;
+        if (!title || !Array.isArray(messages) || messages.length < 2 || messages.length > 30 ||
+            messages.some(m => !m || !["user","assistant"].includes(m.role) || typeof m.content !== "string" || !m.content.trim() || m.content.length > 6000) ||
+            JSON.stringify(messages).length > 40000) {
+          return json({ error: "Invalid chat history. Please shorten the conversation and try again." }, 400);
+        }
+        try {
+          await env.DB.prepare("INSERT INTO tutor_chats (id,user_id,title,messages_json,updated_at) VALUES (?,?,?,?,datetime('now')) ON CONFLICT(id) DO UPDATE SET title=excluded.title,messages_json=excluded.messages_json,updated_at=datetime('now') WHERE tutor_chats.user_id=excluded.user_id")
+            .bind(id,session.sub,title,JSON.stringify(messages)).run();
+          return json({ id,title,ok:true });
+        } catch { return json({ error: "Could not save this conversation." }, 500); }
+      }
+      if (chatId && request.method === "GET") {
+        try {
+          const row = await env.DB.prepare("SELECT id,title,messages_json,created_at,updated_at FROM tutor_chats WHERE id=? AND user_id=?").bind(chatId,session.sub).first();
+          if (!row) return json({ error: "Chat not found." }, 404);
+          let messages=[]; try { messages=JSON.parse(row.messages_json)||[]; } catch {}
+          return json({ chat:{id:row.id,title:row.title,messages,created_at:row.created_at,updated_at:row.updated_at} });
+        } catch { return json({ error: "Could not load this conversation." }, 500); }
+      }
+      if (chatId && request.method === "PATCH") {
+        const body=await bodyJson(request),title=typeof body?.title==="string"?body.title.trim().slice(0,80):"";
+        if(!title)return json({error:"Enter a chat title."},400);
+        try {
+          const result=await env.DB.prepare("UPDATE tutor_chats SET title=?,updated_at=datetime('now') WHERE id=? AND user_id=?").bind(title,chatId,session.sub).run();
+          if(!result.meta?.changes)return json({error:"Chat not found."},404);
+          return json({ok:true,title});
+        } catch { return json({error:"Could not rename this chat."},500); }
+      }
+      if (chatId && request.method === "DELETE") {
+        try {
+          const result=await env.DB.prepare("DELETE FROM tutor_chats WHERE id=? AND user_id=?").bind(chatId,session.sub).run();
+          if(!result.meta?.changes)return json({error:"Chat not found."},404);
+          return json({ok:true});
+        } catch { return json({error:"Could not delete this chat."},500); }
+      }
+      return json({error:"Method not allowed."},405);
+    }
+
     if (url.pathname === "/api/tutor" && request.method === "POST") {
       const session = await readSession(request, env.SESSION_SECRET);
       if (!session) return json({ error: "Please sign in to use the AI assistant." }, 401);
