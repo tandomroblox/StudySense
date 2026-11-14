@@ -478,55 +478,64 @@ const profileForm=document.querySelector("#profileForm"),profileName=document.qu
 const tutorForm=document.querySelector("#tutorForm"),tutorInput=document.querySelector("#tutorInput"),tutorSubmit=document.querySelector("#tutorSubmit"),tutorMessage=document.querySelector("#tutorMessage"),tutorTranscript=document.querySelector("#tutorTranscript"),tutorGradeLabel=document.querySelector("#tutorGradeLabel"),tutorVoiceInput=document.querySelector("#tutorVoiceInput"),tutorSpeak=document.querySelector("#tutorSpeak");
 let tutorSending=false;
 let tutorConversation=[];
+function appendTutorMath(parent, expression, display = false) {
+  const wrapper = document.createElement(display ? "div" : "span");
+  wrapper.className = display ? "tutor-math tutor-math-display" : "tutor-math tutor-math-inline";
+  if (display) wrapper.setAttribute("role", "math");
+  else wrapper.setAttribute("aria-label", expression);
+  const source = String(expression || "")
+    .replace(/\\left|\\right/g, "")
+    .replace(/\\times/g, "×").replace(/\\cdot/g, "·")
+    .replace(/\\div/g, "÷").replace(/\\pm/g, "±")
+    .replace(/\\leq?/g, "≤").replace(/\\geq?/g, "≥")
+    .replace(/\\neq/g, "≠").replace(/\\pi/g, "π")
+    .replace(/\\theta/g, "θ").replace(/\\sqrt\{([^{}]+)\}/g, "√($1)")
+    .replace(/\\,/g, " ").replace(/\\;/g, " ");
+  const token = /(\^\{([^{}]+)\}|\^([A-Za-z0-9+\-=])|_\{([^{}]+)\}|_([A-Za-z0-9]+))/g;
+  let cursor = 0, match;
+  while ((match = token.exec(source))) {
+    if (match.index > cursor) wrapper.append(document.createTextNode(source.slice(cursor, match.index)));
+    const node = document.createElement(match[1].startsWith("^") ? "sup" : "sub");
+    node.textContent = match[2] ?? match[3] ?? match[4] ?? match[5] ?? "";
+    wrapper.append(node);
+    cursor = token.lastIndex;
+  }
+  if (cursor < source.length) wrapper.append(document.createTextNode(source.slice(cursor)));
+  if (display) {
+    wrapper.style.display = "block";
+    wrapper.style.textAlign = "center";
+    wrapper.style.margin = "0.65rem 0";
+    wrapper.style.padding = "0.65rem 0.9rem";
+    wrapper.style.borderRadius = "0.65rem";
+    wrapper.style.background = "rgba(148, 163, 184, 0.10)";
+    wrapper.style.fontSize = "1.12em";
+    wrapper.style.fontWeight = "600";
+    wrapper.style.overflowX = "auto";
+  } else {
+    wrapper.style.fontFamily = "Cambria Math, STIX Two Math, serif";
+    wrapper.style.fontStyle = "italic";
+    wrapper.style.whiteSpace = "nowrap";
+  }
+  parent.append(wrapper);
+}
 function appendTutorInline(parent, text) {
-  const pattern=/\*\*([^*]+)\*\*|\*([^*]+)\*|\x60([^\x60]+)\x60|\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g;
+  const pattern=/\$\$([\s\S]+?)\$\$|\$([^$\n]+)\$|\*\*([^*]+)\*\*|\*([^*]+)\*|\x60([^\x60]+)\x60|\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g;
   let cursor=0, match;
   while((match=pattern.exec(text))) {
     if(match.index>cursor) parent.append(document.createTextNode(text.slice(cursor,match.index)));
-    let node;
-    if(match[1]!==undefined){node=document.createElement("strong");node.textContent=match[1];}
-    else if(match[2]!==undefined){node=document.createElement("em");node.textContent=match[2];}
-    else if(match[3]!==undefined){node=document.createElement("code");node.textContent=match[3];}
-    else {node=document.createElement("a");node.textContent=match[4];node.href=match[5];node.target="_blank";node.rel="noopener noreferrer";}
-    parent.append(node);cursor=pattern.lastIndex;
+    if(match[1]!==undefined) appendTutorMath(parent,match[1],true);
+    else if(match[2]!==undefined) appendTutorMath(parent,match[2],false);
+    else {
+      let node;
+      if(match[3]!==undefined){node=document.createElement("strong");node.textContent=match[3];}
+      else if(match[4]!==undefined){node=document.createElement("em");node.textContent=match[4];}
+      else if(match[5]!==undefined){node=document.createElement("code");node.textContent=match[5];}
+      else {node=document.createElement("a");node.textContent=match[6];node.href=match[7];node.target="_blank";node.rel="noopener noreferrer";}
+      parent.append(node);
+    }
+    cursor=pattern.lastIndex;
   }
   if(cursor<text.length) parent.append(document.createTextNode(text.slice(cursor)));
-}
-function renderTutorMarkdown(target, markdown) {
-  target.replaceChildren();
-  const lines=String(markdown||"").replace(/\r\n?/g,"\n").split("\n");
-  let paragraph=[],list=null,codeLines=null;
-  const flushParagraph=()=>{
-    if(!paragraph.length)return;
-    const p=document.createElement("p");
-    appendTutorInline(p,paragraph.join(" "));
-    target.append(p);paragraph=[];
-  };
-  const flushList=()=>{if(list){target.append(list);list=null;}};
-  for(const line of lines){
-    if(line.trim().startsWith("```")){
-      flushParagraph();flushList();
-      if(codeLines){const pre=document.createElement("pre"),code=document.createElement("code");code.textContent=codeLines.join("\n");pre.append(code);target.append(pre);codeLines=null;}
-      else codeLines=[];
-      continue;
-    }
-    if(codeLines){codeLines.push(line);continue;}
-    const trimmed=line.trim();
-    if(!trimmed){flushParagraph();flushList();continue;}
-    const heading=trimmed.match(/^(#{1,3})\s+(.+)$/);
-    if(heading){flushParagraph();flushList();const h=document.createElement("h"+heading[1].length);appendTutorInline(h,heading[2]);target.append(h);continue;}
-    const item=trimmed.match(/^([-*+]\s+|\d+[.)]\s+)(.+)$/);
-    if(item){
-      flushParagraph();
-      const ordered=/^\d/.test(item[1]);
-      if(!list||list.tagName!==(ordered?"OL":"UL")){flushList();list=document.createElement(ordered?"ol":"ul");}
-      const li=document.createElement("li");appendTutorInline(li,item[2]);list.append(li);continue;
-    }
-    if(/^[-*_]{3,}$/.test(trimmed)){flushParagraph();flushList();target.append(document.createElement("hr"));continue;}
-    flushList();paragraph.push(trimmed);
-  }
-  flushParagraph();flushList();
-  if(codeLines){const pre=document.createElement("pre"),code=document.createElement("code");code.textContent=codeLines.join("\n");pre.append(code);target.append(pre);}
 }
 function appendTutorMessage(role, content, pending=false) {
   const article=document.createElement("article");
