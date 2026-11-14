@@ -379,61 +379,13 @@ export default {
       if(name.length>60||school.length>120||!Number.isInteger(grade)||grade<6||grade>10||!Number.isInteger(goal)||goal<15||goal>600)return json({error:"Check your name, school, class (6–10), and study goal (15–600 minutes)."},400);
       try{await env.DB.prepare("INSERT INTO user_profiles(user_id,display_name,grade,school,daily_goal_minutes,updated_at) VALUES(?,?,?,?,?,datetime('now')) ON CONFLICT(user_id) DO UPDATE SET display_name=excluded.display_name,grade=excluded.grade,school=excluded.school,daily_goal_minutes=excluded.daily_goal_minutes,updated_at=datetime('now')").bind(session.sub,name,grade,school,goal).run();return json({profile:{display_name:name,grade,school,daily_goal_minutes:goal}});}catch{return json({error:"Could not save profile. Check that migration 0005 has been applied."},500);}
     }
-    if (url.pathname === "/api/chat-links" || url.pathname.startsWith("/api/chat-links/")) {
-      const session = await readSession(request, env.SESSION_SECRET);
-      if (!session) return json({ error: "Please sign in to sync chats between accounts." }, 401);
-      if (url.pathname === "/api/chat-links" && request.method === "GET") {
-        try {
-          const result = await env.DB.prepare("SELECT l.linked_user_id, u.email, l.created_at FROM tutor_chat_links l JOIN users u ON u.id=l.linked_user_id WHERE l.user_id=? ORDER BY l.created_at DESC").bind(session.sub).all();
-          return json({ links: result.results || [] });
-        } catch { return json({ error: "Chat sync migration is not applied yet." }, 503); }
-      }
-      if (url.pathname === "/api/chat-links/generate" && request.method === "POST") {
-        const code = b64url(crypto.getRandomValues(new Uint8Array(9))).toUpperCase();
-        try {
-          await env.DB.prepare("DELETE FROM tutor_chat_link_codes WHERE expires_at <= datetime('now')").run();
-          await env.DB.prepare("INSERT INTO tutor_chat_link_codes (code_hash,user_id,expires_at) VALUES (?,?,datetime('now','+10 minutes'))")
-            .bind(b64url(await hmac(env.SESSION_SECRET, code)), session.sub).run();
-          return json({ code, expires_in_minutes: 10 });
-        } catch { return json({ error: "Could not create a linking code." }, 500); }
-      }
-      if (url.pathname === "/api/chat-links/connect" && request.method === "POST") {
-        const body = await bodyJson(request);
-        const code = typeof body?.code === "string" ? body.code.trim().toUpperCase() : "";
-        if (!/^[A-Z0-9_-]{10,20}$/.test(code)) return json({ error: "Enter a valid linking code." }, 400);
-        try {
-          const codeHash = b64url(await hmac(env.SESSION_SECRET, code));
-          const invite = await env.DB.prepare("SELECT user_id FROM tutor_chat_link_codes WHERE code_hash=? AND expires_at>datetime('now')").bind(codeHash).first();
-          if (!invite) return json({ error: "That code is invalid or has expired. Generate a new one on the other account." }, 404);
-          if (invite.user_id === session.sub) return json({ error: "Use the code from your other account." }, 400);
-          await env.DB.batch([
-            env.DB.prepare("INSERT OR IGNORE INTO tutor_chat_links (user_id,linked_user_id) VALUES (?,?)").bind(session.sub,invite.user_id),
-            env.DB.prepare("INSERT OR IGNORE INTO tutor_chat_links (user_id,linked_user_id) VALUES (?,?)").bind(invite.user_id,session.sub),
-            env.DB.prepare("DELETE FROM tutor_chat_link_codes WHERE code_hash=?").bind(codeHash)
-          ]);
-          return json({ ok:true, message:"Accounts linked. Chat history is now shared between them." });
-        } catch { return json({ error: "Could not link these accounts. Please try again." }, 500); }
-      }
-      const linkedId = url.pathname.startsWith("/api/chat-links/") ? decodeURIComponent(url.pathname.slice("/api/chat-links/".length)) : "";
-      if (linkedId && request.method === "DELETE") {
-        try {
-          await env.DB.batch([
-            env.DB.prepare("DELETE FROM tutor_chat_links WHERE user_id=? AND linked_user_id=?").bind(session.sub,linkedId),
-            env.DB.prepare("DELETE FROM tutor_chat_links WHERE user_id=? AND linked_user_id=?").bind(linkedId,session.sub)
-          ]);
-          return json({ ok:true });
-        } catch { return json({ error:"Could not disconnect this account." },500); }
-      }
-      return json({ error:"Method not allowed." },405);
-    }
-
     if (url.pathname === "/api/chats" || url.pathname.startsWith("/api/chats/")) {
       const session = await readSession(request, env.SESSION_SECRET);
       if (!session) return json({ error: "Please sign in to access your saved chats." }, 401);
       const chatId = url.pathname.startsWith("/api/chats/") ? decodeURIComponent(url.pathname.slice("/api/chats/".length)) : "";
       if (url.pathname === "/api/chats" && request.method === "GET") {
         try {
-          const result = await env.DB.prepare("SELECT id,title,created_at,updated_at FROM tutor_chats WHERE user_id=? OR user_id IN (SELECT linked_user_id FROM tutor_chat_links WHERE user_id=?) ORDER BY updated_at DESC LIMIT 100").bind(session.sub,session.sub).all();
+          const result = await env.DB.prepare("undefined").bind(session.sub).all();
           return json({ chats: result.results || [] });
         } catch { return json({ error: "Chat history database migration is not applied yet." }, 503); }
       }
@@ -448,10 +400,10 @@ export default {
           return json({ error: "Invalid chat history. Please shorten the conversation and try again." }, 400);
         }
         try {
-          const existing = await env.DB.prepare("SELECT id FROM tutor_chats WHERE id=? AND (user_id=? OR user_id IN (SELECT linked_user_id FROM tutor_chat_links WHERE user_id=?))").bind(id,session.sub,session.sub).first();
+          const existing = await env.DB.prepare("SELECT id FROM tutor_chats WHERE id=? AND user_id=?").bind(id,session.sub).first();
           if (existing) {
-            await env.DB.prepare("UPDATE tutor_chats SET title=?,messages_json=?,updated_at=datetime('now') WHERE id=? AND (user_id=? OR user_id IN (SELECT linked_user_id FROM tutor_chat_links WHERE user_id=?))")
-              .bind(title,JSON.stringify(messages),id,session.sub,session.sub).run();
+            await env.DB.prepare("UPDATE tutor_chats SET title=?,messages_json=?,updated_at=datetime('now') WHERE id=? AND user_id=?")
+              .bind(title,JSON.stringify(messages),id,session.sub).run();
           } else {
             await env.DB.prepare("INSERT INTO tutor_chats (id,user_id,title,messages_json,updated_at) VALUES (?,?,?,?,datetime('now'))")
               .bind(id,session.sub,title,JSON.stringify(messages)).run();
@@ -461,7 +413,7 @@ export default {
       }
       if (chatId && request.method === "GET") {
         try {
-          const row = await env.DB.prepare("SELECT id,title,messages_json,created_at,updated_at FROM tutor_chats WHERE id=? AND (user_id=? OR user_id IN (SELECT linked_user_id FROM tutor_chat_links WHERE user_id=?))").bind(chatId,session.sub,session.sub).first();
+          const row = await env.DB.prepare("SELECT id,title,messages_json,created_at,updated_at FROM tutor_chats WHERE id=? AND user_id=?").bind(chatId,session.sub).first();
           if (!row) return json({ error: "Chat not found." }, 404);
           let messages=[]; try { messages=JSON.parse(row.messages_json)||[]; } catch {}
           return json({ chat:{id:row.id,title:row.title,messages,created_at:row.created_at,updated_at:row.updated_at} });
@@ -471,14 +423,14 @@ export default {
         const body=await bodyJson(request),title=typeof body?.title==="string"?body.title.trim().slice(0,80):"";
         if(!title)return json({error:"Enter a chat title."},400);
         try {
-          const result=await env.DB.prepare("UPDATE tutor_chats SET title=?,updated_at=datetime('now') WHERE id=? AND (user_id=? OR user_id IN (SELECT linked_user_id FROM tutor_chat_links WHERE user_id=?))").bind(title,chatId,session.sub,session.sub).run();
+          const result=await env.DB.prepare("UPDATE tutor_chats SET title=?,updated_at=datetime('now') WHERE id=? AND user_id=?").bind(title,chatId,session.sub).run();
           if(!result.meta?.changes)return json({error:"Chat not found."},404);
           return json({ok:true,title});
         } catch { return json({error:"Could not rename this chat."},500); }
       }
       if (chatId && request.method === "DELETE") {
         try {
-          const result=await env.DB.prepare("DELETE FROM tutor_chats WHERE id=? AND (user_id=? OR user_id IN (SELECT linked_user_id FROM tutor_chat_links WHERE user_id=?))").bind(chatId,session.sub,session.sub).run();
+          const result=await env.DB.prepare("DELETE FROM tutor_chats WHERE id=? AND user_id=?").bind(chatId,session.sub).run();
           if(!result.meta?.changes)return json({error:"Chat not found."},404);
           return json({ok:true});
         } catch { return json({error:"Could not delete this chat."},500); }
