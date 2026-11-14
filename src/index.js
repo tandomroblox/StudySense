@@ -385,7 +385,7 @@ export default {
       const chatId = url.pathname.startsWith("/api/chats/") ? decodeURIComponent(url.pathname.slice("/api/chats/".length)) : "";
       if (url.pathname === "/api/chats" && request.method === "GET") {
         try {
-          const result = await env.DB.prepare("undefined").bind(session.sub).all();
+          const result = await env.DB.prepare("SELECT id,title,created_at,updated_at FROM tutor_chats WHERE user_id=? ORDER BY updated_at DESC LIMIT 100").bind(session.sub).all();
           return json({ chats: result.results || [] });
         } catch { return json({ error: "Chat history database migration is not applied yet." }, 503); }
       }
