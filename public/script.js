@@ -249,7 +249,7 @@ authForm.addEventListener("submit", async event => {
     });
     passwordInput.value = "";
     showSignedIn(user.user);
-    await Promise.all([loadTasks(), loadExams(), loadLearningTools(), loadProfile(), loadTutorChats()]);
+    await Promise.all([loadTasks(), loadExams(), loadLearningTools(), loadProfile(), loadTutorChats(), loadTutorLinkedAccounts()]);
   } catch (error) {
     authMessage.textContent = error.message;
   } finally {
@@ -483,6 +483,40 @@ let tutorChats=[];
 const tutorHistoryList=document.querySelector("#tutorHistoryList");
 const tutorHistoryStatus=document.querySelector("#tutorHistoryStatus");
 const tutorNewChat=document.querySelector("#tutorNewChat");
+const tutorGenerateLink=document.querySelector("#tutorGenerateLink");
+const tutorLinkCode=document.querySelector("#tutorLinkCode");
+const tutorConnectLink=document.querySelector("#tutorConnectLink");
+const tutorLinkCodeDisplay=document.querySelector("#tutorLinkCodeDisplay");
+const tutorLinkedAccounts=document.querySelector("#tutorLinkedAccounts");
+const tutorSyncMessage=document.querySelector("#tutorSyncMessage");
+async function loadTutorLinkedAccounts(){
+  if(!tutorLinkedAccounts)return;
+  try{
+    const data=await api("/api/chat-links");
+    tutorLinkedAccounts.replaceChildren();
+    for(const account of data.links||[]){
+      const row=document.createElement("div");row.className="tutor-linked-account";
+      const email=document.createElement("span");email.textContent="Linked: "+account.email;
+      const disconnect=document.createElement("button");disconnect.type="button";disconnect.className="secondary-button";disconnect.textContent="Disconnect";
+      disconnect.addEventListener("click",async()=>{if(!window.confirm("Disconnect "+account.email+"? Their chats will no longer appear in your history."))return;try{await api("/api/chat-links/"+encodeURIComponent(account.linked_user_id),{method:"DELETE"});await Promise.all([loadTutorLinkedAccounts(),loadTutorChats()]);tutorSyncMessage.textContent="Account disconnected.";}catch(e){tutorSyncMessage.textContent=e.message;}});
+      row.append(email,disconnect);tutorLinkedAccounts.append(row);
+    }
+    if(!(data.links||[]).length){const note=document.createElement("p");note.textContent="No other accounts linked yet.";tutorLinkedAccounts.append(note);}
+  }catch(error){tutorSyncMessage.textContent=error.message;}
+}
+if(tutorGenerateLink)tutorGenerateLink.addEventListener("click",async()=>{
+  tutorGenerateLink.disabled=true;tutorSyncMessage.textContent="Generating code…";
+  try{const data=await api("/api/chat-links/generate",{method:"POST",body:JSON.stringify({})});tutorLinkCodeDisplay.hidden=false;tutorLinkCodeDisplay.textContent=data.code;tutorSyncMessage.textContent="Use this code on the other account within 10 minutes. Keep it private.";}
+  catch(error){tutorSyncMessage.textContent=error.message;}
+  finally{tutorGenerateLink.disabled=false;}
+});
+if(tutorConnectLink)tutorConnectLink.addEventListener("click",async()=>{
+  const code=tutorLinkCode.value.trim();if(!code){tutorSyncMessage.textContent="Enter the code generated on your other account.";return;}
+  tutorConnectLink.disabled=true;tutorSyncMessage.textContent="Linking accounts…";
+  try{const data=await api("/api/chat-links/connect",{method:"POST",body:JSON.stringify({code})});tutorLinkCode.value="";tutorLinkCodeDisplay.hidden=true;tutorSyncMessage.textContent=data.message||"Accounts linked.";await Promise.all([loadTutorLinkedAccounts(),loadTutorChats()]);}
+  catch(error){tutorSyncMessage.textContent=error.message;}
+  finally{tutorConnectLink.disabled=false;}
+});
 function makeTutorTitle(prompt){
   const cleaned=String(prompt||"").replace(/\s+/g," ").replace(/^(please\s+)?(can you|could you|would you|explain|help me|tell me|what is|what are)\s+/i,"").trim();
   const words=cleaned.split(" ").filter(Boolean);
