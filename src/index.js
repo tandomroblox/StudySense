@@ -155,7 +155,12 @@ async function googleIdentityFromCode(code, request, env, nonce) {
       typeof claims.sub !== "string" || typeof claims.email !== "string") {
     throw new Error("Google ID token claims are invalid");
   }
-  return { sub: claims.sub, email: claims.email.trim().toLowerCase() };
+  return {
+    sub: claims.sub,
+    email: claims.email.trim().toLowerCase(),
+    name: typeof claims.name === "string" ? claims.name.trim().slice(0, 120) : null,
+    picture: typeof claims.picture === "string" && /^https:\/\//i.test(claims.picture) ? claims.picture.slice(0, 2048) : null
+  };
 }
 
 export default {
@@ -254,18 +259,22 @@ export default {
           if (emailUser && emailUser.id !== currentSession.sub) {
             return new Response(null, { status: 303, headers: { "location": new URL("/login.html?google=email_conflict", request.url).toString(), "set-cookie": clearStateCookie, "cache-control": "no-store" } });
           }
-          await env.DB.prepare("UPDATE users SET google_sub = ? WHERE id = ?").bind(identity.sub, currentSession.sub).run();
+          await env.DB.prepare("UPDATE users SET google_sub = ?, google_name = ?, google_picture_url = ? WHERE id = ?").bind(identity.sub, identity.name, identity.picture, currentSession.sub).run();
           return new Response(null, { status: 303, headers: { "location": new URL("/login.html?google=linked", request.url).toString(), "set-cookie": clearStateCookie, "cache-control": "no-store" } });
         }
 
         user = await env.DB.prepare("SELECT id, email FROM users WHERE google_sub = ?").bind(identity.sub).first();
+        if (user) {
+          await env.DB.prepare("UPDATE users SET google_name = ?, google_picture_url = ? WHERE id = ?")
+            .bind(identity.name, identity.picture, user.id).run();
+        }
         if (!user) {
           const emailUser = await env.DB.prepare("SELECT id, email, google_sub FROM users WHERE email = ?").bind(identity.email).first();
           if (emailUser) {
             return new Response(null, { status: 303, headers: { "location": new URL("/login.html?google=link_required", request.url).toString(), "set-cookie": clearStateCookie, "cache-control": "no-store" } });
           }
           const id = crypto.randomUUID();
-          await env.DB.prepare("INSERT INTO users (id, email, password_hash, google_sub) VALUES (?, ?, NULL, ?)").bind(id, identity.email, identity.sub).run();
+          await env.DB.prepare("INSERT INTO users (id, email, password_hash, google_sub, google_name, google_picture_url) VALUES (?, ?, NULL, ?, ?, ?)").bind(id, identity.email, identity.sub, identity.name, identity.picture).run();
           user = { id, email: identity.email };
         }
         if (state.mode === "desktop") {
@@ -366,7 +375,13 @@ export default {
 
     if (url.pathname === "/api/auth/me" && request.method === "GET") {
       const session = await readSession(request, env.SESSION_SECRET);
-      return session ? json({ user: { id: session.sub, email: session.email } }) : json({ user: null });
+      if (!session) return json({ user: null });
+      try {
+        const user = await env.DB.prepare("SELECT id, email, google_name, google_picture_url FROM users WHERE id = ?").bind(session.sub).first();
+        return user ? json({ user: { id: user.id, email: user.email, name: user.google_name || "", picture: user.google_picture_url || "" } }) : json({ user: null });
+      } catch {
+        return json({ user: { id: session.sub, email: session.email, name: "", picture: "" } });
+      }
     }
 
 
